@@ -15,5 +15,8 @@ export default defineConfig({
         assetFileNames: '[name].[ext]'
       }
     }
+  },
+  define: {
+    'process.env': process.env
   }
 })

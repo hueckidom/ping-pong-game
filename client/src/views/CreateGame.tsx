@@ -5,6 +5,8 @@ import buttonClickSound from "../assets/button-click-sound.mp3";
 import backgroundMusic from "../assets/game.mp3";
 import AudioComponent from "../components/Audio";
 import { playSound } from "../utils/board";
+import { apiUrl } from "../utils/config";
+import { createSession, getSessionById, startGame } from "../api/api";
 
 const CreateGame: React.FC<{
   onSubmit: (name: string, sessionId: string) => void;
@@ -14,8 +16,8 @@ const CreateGame: React.FC<{
   const [emptyError, setEmptyError] = useState<string | null>(null);
   const [link, setLink] = useState<string | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
-  const [loading, setLoading] = useState<boolean>(false);
-  const [loadingText, setLoadingText] = useState<string | null>(null);
+  const [isWaitingForPlayer, setIsWaitingForPlayer] = useState<boolean>(false);
+  const [isLoading, setLoading] = useState<boolean>(false);
   const [showInviteMessage, setShowInviteMessage] = useState<boolean>(false);
   const navigate = useNavigate();
 
@@ -29,18 +31,17 @@ const CreateGame: React.FC<{
     }
 
     try {
-      const response = await axios.post(
-        "https://localhost:7144/Session/CreateSession",
-        { name }
-      );
-      const sessionId = response.data.sessionId;
+      setError(null)
+      setLoading(true);
+      await new Promise((resolve) => setTimeout(() => resolve(null), 500)); //little delay for animation purpose
+      const response = await createSession(name);
+      const sessionId = response.sessionId;
       if (sessionId) {
         setSessionId(sessionId);
         onSubmit(name, sessionId);
-        const joinLink = `http://localhost:5173/#/join/${sessionId}`;
+        const joinLink = `${window.location.origin}/#/join/${sessionId}`;
         setLink(joinLink);
-        setLoading(true);
-        setLoadingText("Warten auf weitere Spieler...");
+        setIsWaitingForPlayer(true);
         setShowInviteMessage(true);
         pollForPlayers(sessionId);
       } else {
@@ -48,25 +49,24 @@ const CreateGame: React.FC<{
       }
     } catch (err) {
       console.error("Error:", err);
-      setError("Failed to create session. Please try again.");
+      setError("Fehler beim erstellen des Spieles.");
+    } finally {
+      setLoading(false)
     }
   };
 
   const pollForPlayers = async (sessionId: string) => {
     const intervalId = setInterval(async () => {
       try {
-        const response = await axios.get(
-          `https://localhost:7144/Session/GetSessionById/${sessionId}`
-        );
-        console.log("API Response:", response.data);
+        const response = await getSessionById(sessionId);
+        console.log("API Response:", response);
 
-        const players = response.data.players || [];
+        const players = response.players || [];
         console.log("Number of players:", players.length);
 
         if (players.length > 1) {
           clearInterval(intervalId);
-          setLoading(false);
-          setLoadingText(null);
+          setIsWaitingForPlayer(false);
           alert("Ein neuer Spieler ist dem Spiel beigetreten!");
         }
       } catch (err) {
@@ -85,13 +85,11 @@ const CreateGame: React.FC<{
     }
   };
 
-  const startGame = async () => {
+  const onStartGame = async () => {
     await playSound(buttonClickSound);
     if (sessionId) {
       try {
-        await axios.post(`https://localhost:7144/Session/Startgame`, {
-          sessionId,
-        });
+        await startGame(sessionId);
         navigate(`/game/${sessionId}`);
       } catch (err) {
         console.error("Failed to start game:", err);
@@ -105,9 +103,12 @@ const CreateGame: React.FC<{
       <div className="hero min-h-screen bg-base-200">
         <div className="hero-content text-center flex flex-col items-center">
           <div className="mb-12 floating">
-            <h1 className="sweet-title">
-              <span data-text="Create Game">Create Game</span>
-            </h1>
+            <h2 className="sweet-title sweet-title-purple mb-4">
+              <span data-text="Spiel">Spiel</span>
+            </h2>
+            <h2 className="sweet-title sweet-title-mixed">
+              <span data-text="Erstellen">Erstellen</span>
+            </h2>
           </div>
           <form
             onSubmit={handleSubmit}
@@ -124,10 +125,14 @@ const CreateGame: React.FC<{
               className="input-kave-btn"
               required
             />
-            <button type="submit" className={`kave-btn ${name ? "" : "empty"}`}>
-              <span className="kave-line"></span>
-              Bestätigen
-            </button>
+            {isLoading ?
+              <div className="text-md p-4">Wird erstellt... <span className="loading loading-spinner text-info"></span> </div> :
+              <button type="submit" className={`kave-btn ${name ? "" : "empty"}`} disabled={isLoading}>
+                <span className="kave-line"></span>
+                Erstellen
+              </button>
+            }
+
             {emptyError && <p className="mt-4 text-red-500">{emptyError}</p>}
             {error && <p className="mt-4 text-red-500">{error}</p>}
             {link && (
@@ -141,18 +146,16 @@ const CreateGame: React.FC<{
             )}
           </form>
 
-          {loading && (
-            <div className="mt-4 text-white">
-              <p>{loadingText}</p>
-              <div className="w-full h-2 bg-gray-200 rounded">
-                <div className="w-1/2 h-full bg-blue-500 rounded animate-pulse"></div>
-              </div>
+          {isWaitingForPlayer && (
+            <div className="mt-4 text-white flex gap-2 justify-center items-center">
+              <p>Warten auf weitere Spieler</p>
+              <span className="loading loading-ring loading-md"></span>
             </div>
           )}
 
-          {!loading && sessionId && (
+          {!isWaitingForPlayer && sessionId && (
             <button
-              onClick={startGame}
+              onClick={onStartGame}
               className={`kave-btn ${sessionId ? "active" : "empty"}`}
               style={{ marginTop: "17px" }}
             >
@@ -169,7 +172,7 @@ const CreateGame: React.FC<{
         </div>
       </div>
       <AudioComponent
-        onAudioEnd={() => {}}
+        onAudioEnd={() => { }}
         path={backgroundMusic}
         volume={0.005}
       />

@@ -82,7 +82,24 @@ export interface BaseSettings {
     keyDown: string;
     key2Up: string;
     key2Down: string;
-    volume: number;	
+    volume: number;
     questionSeconds: number;
     pushInterval: number;
+}
+
+export interface Player {
+    sessionId: string;
+    id: string;
+    name: string | null;
+    score: number;
+}
+
+export interface Session {
+    sessionId: string;
+    players: Player[] | null;
+    isSessionRunning: boolean;
+}
+
+export interface ApiResponse<T> {
+    data: T;
 }

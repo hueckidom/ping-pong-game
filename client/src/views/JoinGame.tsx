@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import axios from "axios";
+import { getSessionById, joinRoom } from "../api/api";
 
 const JoinGame: React.FC = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
@@ -16,10 +16,7 @@ const JoinGame: React.FC = () => {
     e.preventDefault();
     if (playerName && sessionId) {
       try {
-        await axios.post(
-          `https://localhost:7144/api/Player/JoinRoom/${sessionId}`,
-          { playername: playerName }
-        );
+        await joinRoom(sessionId, playerName)
         setJoined(true); // Set player as joined
         setLoading(true); // Start showing loading indicator for game start
 
@@ -35,10 +32,8 @@ const JoinGame: React.FC = () => {
   const pollForGameStart = (sessionId: string) => {
     const intervalId = setInterval(async () => {
       try {
-        const response = await axios.get(
-          `https://localhost:7144/Session/GetSessionById/${sessionId}`
-        );
-        const isGameStarted = response.data.isGameStarted;
+        const response = await getSessionById(sessionId);
+        const isGameStarted = response.isSessionRunning;
 
         if (isGameStarted) {
           clearInterval(intervalId);
@@ -48,7 +43,7 @@ const JoinGame: React.FC = () => {
       } catch (err) {
         console.error("Error while polling for game start:", err);
       }
-    }, 4000); // Poll every 4 seconds
+    }, 2000); // Poll every 2 seconds
   };
 
   return (

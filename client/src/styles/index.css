@@ -113,7 +113,7 @@ body {
     text-transform: uppercase;
     font-weight: normal;
     letter-spacing: 1.8px;
-    width: 200px;
+    width: 250px;
     height: 70px;
     padding: 0;
     transition: all 0.25s ease;
@@ -159,6 +159,16 @@ body {
   font-weight: 800;
   border: solid 1px #FFEB3B
 }
+
+.kave-btn:disabled:hover {
+  box-shadow: none;
+  color: inherit;
+  text-shadow: none;
+  font-weight: normal;
+  cursor: not-allowed;
+  opacity: 0.3;
+}
+
 .kave-btn.empty:hover {
   background-color: red;
   border-color: red;
@@ -172,7 +182,7 @@ body {
   font-weight: normal;
   text-align: center;
   letter-spacing: 1.8px;
-  width: 200px;
+  width: 250px;
   height: 70px;
   padding: 0 10px;
   transition: all 0.25s ease;
