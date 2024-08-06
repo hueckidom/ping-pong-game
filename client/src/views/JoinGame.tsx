@@ -51,14 +51,18 @@ const JoinGame: React.FC = () => {
       <div className="hero-content text-center">
         <div className="">
           <div className="title-wrapper mb-12 floating">
-            <h1 className="sweet-title">
-              <span data-text="Join Game">Join Game</span>
+            <h1 className="sweet-title mb-4">
+              <span data-text="Spiel">Spiel</span>
+            </h1>
+            <h1 className="sweet-title sweet-title-mixed">
+              <span data-text="Beitreten">Beitreten</span>
             </h1>
           </div>
           <form onSubmit={handleSubmit}>
             <label className="block mb-4">
               <input
                 type="text"
+                autoFocus={true}
                 value={playerName}
                 onChange={(e) => setPlayerName(e.target.value)}
                 placeholder="DEIN NAME"
@@ -71,7 +75,7 @@ const JoinGame: React.FC = () => {
               className={`kave-btn ${playerName ? "" : "empty"}`}
             >
               <span className="kave-line"></span>
-              Join Game
+              Beitreten
             </button>
             {emptyError && <p className="mt-4 text-red-500">{emptyError}</p>}
             {error && <p className="mt-4 text-red-500">{error}</p>}{" "}

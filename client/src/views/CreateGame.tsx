@@ -1,13 +1,13 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
 import buttonClickSound from "../assets/button-click-sound.mp3";
 import backgroundMusic from "../assets/game.mp3";
 import AudioComponent from "../components/Audio";
 import { playSound } from "../utils/board";
-import { apiUrl } from "../utils/config";
 import { createSession, getSessionById, startGame } from "../api/api";
+import { Player } from "../utils/types";
 
+let playerPollIntervall;
 const CreateGame: React.FC<{
   onSubmit: (name: string, sessionId: string) => void;
 }> = ({ onSubmit }) => {
@@ -20,6 +20,7 @@ const CreateGame: React.FC<{
   const [isLoading, setLoading] = useState<boolean>(false);
   const [showInviteMessage, setShowInviteMessage] = useState<boolean>(false);
   const [showCopyMessage, setShowCopyMessage] = useState<boolean>(false);
+  const [players, setPlayers] = useState<Player[]>([]);
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -57,7 +58,7 @@ const CreateGame: React.FC<{
   };
 
   const pollForPlayers = async (sessionId: string) => {
-    const intervalId = setInterval(async () => {
+    playerPollIntervall = setInterval(async () => {
       try {
         const response = await getSessionById(sessionId);
         console.log("API Response:", response);
@@ -66,9 +67,8 @@ const CreateGame: React.FC<{
         console.log("Number of players:", players.length);
 
         if (players.length > 1) {
-          clearInterval(intervalId);
           setIsWaitingForPlayer(false);
-          alert("Ein neuer Spieler ist dem Spiel beigetreten!");
+          setPlayers(players);
         }
       } catch (err) {
         console.error("Error while polling for players:", err);
@@ -139,6 +139,64 @@ const CreateGame: React.FC<{
     />
   }
 
+  // Component GameLobbyPanel, if more than 1 players joined and we are rdy
+  const GameLobbyPanel = () => {
+    return <>
+      {players.map((value, index) => {
+        if (index == 0) return <span className="text-yellow-200 font-bold">Spieler 1(du) : {value.name}</span>
+        if (index == 1) return <span className="text-blue-500 font-bold">Spieler 2 : {value.name}</span>
+
+        return <span>Zuschauer : {value.name}</span>
+      })}
+    </>
+  }
+
+  const CreateGamePanel = () => {
+    if (players.length > 1) {
+      return <GameLobbyPanel />
+    }
+
+    return <form
+      onSubmit={handleSubmit}
+      className="flex flex-col items-center gap-4"
+    >
+      <NameInput />
+      <CreateButton />
+
+      {emptyError && <p className="mt-4 text-red-500">{emptyError}</p>}
+      {error && <p className="mt-4 text-red-500">{error}</p>}
+
+      {showInviteMessage && (
+        <div className="hero-content text-left flex-col bg-base-300 p-4 rounded-lg">
+          <p>Leite den Einladungslink an deinen Mitspieler weiter 😊</p>
+        </div>
+      )}
+      {link && (
+        <div className="relative">
+          <span className="text-xs">{link}</span>
+          <button
+            type="button"
+            onClick={copyToClipboard}
+            className="btn btn-neutral btn-sm ml-2">
+            Kopieren
+          </button>
+          {showCopyMessage && (
+            <div className="hero-content text-right flex-col bg-base-300 p-2 animate-bounce opacity-80 rounded-lg text-xs text-green-300 absolute w-full">
+              <p>Link in zwischenablage kopiert</p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {isWaitingForPlayer && (
+        <div className="mt-4 text-white flex gap-2 justify-center items-center bg-base-300 p-4">
+          <p>Warte auf weiteren Spieler</p>
+          <span className="loading loading-ring loading-md"></span>
+        </div>
+      )}
+    </form>
+  }
+
   return (
     <>
       <div className="hero min-h-screen bg-base-200">
@@ -151,48 +209,9 @@ const CreateGame: React.FC<{
               <span data-text="Erstellen">Erstellen</span>
             </h2>
           </div>
-          <form
-            onSubmit={handleSubmit}
-            className="flex flex-col items-center gap-4"
-          >
-            <NameInput />
-            <CreateButton />
 
-            {emptyError && <p className="mt-4 text-red-500">{emptyError}</p>}
-            {error && <p className="mt-4 text-red-500">{error}</p>}
-
-            {showInviteMessage && (
-              <div className="hero-content text-left flex-col bg-base-300 p-4 rounded-lg">
-                <p>Leite den Einladungslink an deinen Mitspieler weiter 😊</p>
-              </div>
-            )}
-            {link && (
-              <div className="relative">
-                <span className="text-xs">{link}</span>
-                <button
-                  type="button"
-                  onClick={copyToClipboard}
-                  className="btn btn-neutral btn-sm ml-2">
-                  Kopieren
-                </button>
-                {showCopyMessage && (
-                  <div className="hero-content text-right flex-col bg-base-300 p-2 animate-bounce opacity-80 rounded-lg text-xs text-green-300 absolute w-full">
-                    <p>Link in zwischenablage kopiert</p>
-                  </div>
-                )}
-              </div>
-            )}
-
-          </form>
-
-          {isWaitingForPlayer && (
-            <div className="mt-4 text-white flex gap-2 justify-center items-center bg-base-300 p-4">
-              <p>Warte auf weiteren Spieler</p>
-              <span className="loading loading-ring loading-md"></span>
-            </div>
-          )}
-
-          {!isWaitingForPlayer && sessionId && (
+          <CreateGamePanel />
+          {players.length > 1 && (
             <button
               onClick={onStartGame}
               className={`kave-btn ${sessionId ? "active" : "empty"}`}
