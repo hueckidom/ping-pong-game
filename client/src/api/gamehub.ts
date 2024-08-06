@@ -58,7 +58,6 @@ export class GameHubClient {
     }
 
     public async detectPlayerMovement(sessionId: string, playerPosition: PlayerPosition): Promise<void> {
-        console.log(playerPosition)
         await this.connection.invoke("DetectPlayerMovement", sessionId, playerPosition);
     }
 

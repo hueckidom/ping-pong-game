@@ -47,7 +47,7 @@ namespace PingPong.Hubs
         public async Task DetectPlayerScoreAndLife(Guid sessionId, PlayerScoreAndLife scoreAndLife)
         {
             string groupName = sessionId.ToString();
-            await Clients.Group(groupName).SendAsync("Received" + scoreAndLife.Score, scoreAndLife.Life);
+            await Clients.Group(groupName).SendAsync("ReceivedScoreAndLife", scoreAndLife.Score, scoreAndLife.Life);
         }
 
         public async Task DetectCurrentQuestion(Guid sessionId, QuestionItem currentQuestionId)
