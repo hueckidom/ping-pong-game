@@ -60,7 +60,7 @@ namespace PingPong.Hubs
         public async Task DetectBallMovement(Guid sessionId, BallPosition ballPosition)
         {
             string groupName = sessionId.ToString();
-            await Clients.Group(groupName).SendAsync("Received" + ballPosition.X, ballPosition.Y);
+            await Clients.Group(groupName).SendAsync("ReceivedBallMovement", ballPosition.X, ballPosition.Y);
         }
 
         public async Task DetectBallSize(Guid sessionId, BallSize ballSize)

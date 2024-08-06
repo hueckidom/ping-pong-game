@@ -368,6 +368,14 @@ const GameField: React.FC<MultiplePlayerModeProps> = () => {
 
     if (collided && isHost) {
       setScore(gameState.score + gameState.timer);
+
+      // little hack to create a fake sync check if good
+      setTimeout(() => {
+        gameHub.detectBallMovement(gameSession.sessionId, {
+          x: ball.x,
+          y: ball.y
+        })
+      }, 250);
     }
   };
 
@@ -542,7 +550,6 @@ const GameField: React.FC<MultiplePlayerModeProps> = () => {
         player.y = y;
       },
       receiveScoreAndLife: (score: number, life: number) => {
-        console.log("rescei score");
         if (!isHost) {
           setScore(score);
           setLife(life);
@@ -552,7 +559,10 @@ const GameField: React.FC<MultiplePlayerModeProps> = () => {
         console.log(`Current Question ID: ${questionId}`);
       },
       receiveBallMovement: (x: number, y: number) => {
-        console.log(`Ball moved to (${x}, ${y})`);
+        if (!isHost) {
+          ball.x = x;
+          ball.y = y;
+        }
       },
       receiveBallSize: (width: number, height: number) => {
         console.log(`Ball size is (${width}, ${height})`);
