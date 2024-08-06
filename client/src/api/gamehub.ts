@@ -40,6 +40,15 @@ export class GameHubClient {
         this.connection.on("ReceivedBallSize", callbacks.receiveBallSize);
     }
 
+    public async stop(): Promise<void> {
+        try {
+            await this.connection.stop();
+            console.log("SignalR Disconnected.");
+        } catch (err) {
+            console.error("Error while stopping connection: ", err);
+        }
+    }
+
     public async joinLobby(sessionId: string): Promise<void> {
         await this.connection.invoke("JoinLobby", sessionId);
     }
@@ -49,6 +58,7 @@ export class GameHubClient {
     }
 
     public async detectPlayerMovement(sessionId: string, playerPosition: PlayerPosition): Promise<void> {
+        console.log(playerPosition)
         await this.connection.invoke("DetectPlayerMovement", sessionId, playerPosition);
     }
 

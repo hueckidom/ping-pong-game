@@ -9,16 +9,17 @@ export type gamepad = {
     gamepadIndex: number;
 }
 
-export type player = {
+export type GamePlayer = {
     x: number;
     y: number;
     width: number;
     height: number;
     velocityY: number;
     stopPlayer?: boolean;
+    sessionData?: PlayerSessionData;
 };
 
-export type ball = player & {
+export type ball = GamePlayer & {
     velocityX: number; // shhifting by 2px
 };
 
@@ -78,16 +79,16 @@ export interface BaseSettings {
     playerHeight: number;
     boardHeightDivisor: number;
     maxBoardWidth: number;
-    keyUp: string;
-    keyDown: string;
-    key2Up: string;
-    key2Down: string;
+    player2KeyUp: string;
+    player2KeyDown: string;
+    player1KeyUp: string;
+    player1KeyDown: string;
     volume: number;
     questionSeconds: number;
     pushInterval: number;
 }
 
-export interface Player {
+export interface PlayerSessionData {
     sessionId: string;
     id: string;
     name: string | null;
@@ -96,7 +97,7 @@ export interface Player {
 
 export interface Session {
     sessionId: string;
-    players: Player[] | null;
+    players: PlayerSessionData[] | null;
     isSessionRunning: boolean;
 }
 export interface PlayerPosition {

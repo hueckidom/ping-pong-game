@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { getSessionById, joinRoom } from "../api/api";
+import { setSessionState } from "../utils/session-state";
 
 const JoinGame: React.FC = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
@@ -34,6 +35,12 @@ const JoinGame: React.FC = () => {
       try {
         const response = await getSessionById(sessionId);
         const isGameStarted = response.isSessionRunning;
+
+        // todo for zuschauer
+        if (response.players?.length && response.players.length > 1) {
+          const palyer2 = response.players[1];
+          setSessionState(playerName, palyer2.id, response.sessionId, false)
+        }
 
         if (isGameStarted) {
           clearInterval(intervalId);

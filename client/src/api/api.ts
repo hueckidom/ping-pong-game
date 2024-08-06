@@ -1,6 +1,6 @@
 // src/utils/ApiService.ts
 import axios from 'axios';
-import { Player, Session } from '../utils/types';
+import { PlayerSessionData, Session } from '../utils/types';
 import { apiUrl } from "../utils/config";
 
 export const joinRoom = async (sessionId: string, playerName: string): Promise<void> => {
@@ -8,8 +8,8 @@ export const joinRoom = async (sessionId: string, playerName: string): Promise<v
     return response.data;
 };
 
-export const getScores = async (): Promise<Player[]> => {
-    const response = await axios.get<Player[]>(`${apiUrl}/Score/GetScores`);
+export const getScores = async (): Promise<PlayerSessionData[]> => {
+    const response = await axios.get<PlayerSessionData[]>(`${apiUrl}/Score/GetScores`);
     return response.data;
 };
 

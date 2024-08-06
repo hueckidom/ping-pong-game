@@ -2,18 +2,11 @@ import React, { useEffect, useRef, useState } from "react";
 import {
   BaseSettings,
   MultiplePlayerModeProps,
+  Session,
   ball,
-  gamepad,
-  player,
+  GamePlayer,
 } from "../utils/types";
 import { determineBoardWidth, playSound } from "../utils/board";
-import {
-  addGamePadListener,
-  isDownPressed,
-  isPressReleased,
-  isUpPressed,
-  removeGamePadListener,
-} from "../utils/gamepad";
 import { values } from "../utils/options";
 import QuestionDialogCmp, {
   askedQuestionsSet,
@@ -30,6 +23,9 @@ import hitSound from "../assets/Paddle Ball Hit Sound Effect HD.mp3";
 import goalSound from "../assets/goal.mp3";
 import backgroundMusic from "../assets/game.mp3";
 import CountdownOverlay from "./CountdownOverlay";
+import { GameHubClient } from "../api/gamehub";
+import { SessionState, getSessionState } from "../utils/session-state";
+import { getSessionById } from "../api/api";
 
 const INITIAL_GAME_DEFAULTS: BaseSettings = {
   velocityXIncrement: 1.2,
@@ -42,16 +38,17 @@ const INITIAL_GAME_DEFAULTS: BaseSettings = {
   moveSpeed: 6,
   playerHeight: 60,
   playerWidth: 10,
-  key2Down: "s",
-  key2Up: "w",
-  keyDown: "ArrowDown",
-  keyUp: "ArrowUp",
+  player1KeyDown: "ArrowDown",
+  player1KeyUp: "ArrowUp",
+  player2KeyDown: "",
+  player2KeyUp: "",
   volume: 0.06,
   questionSeconds: 20,
   pushInterval: 160,
 };
 
 export let gameDefaults: BaseSettings = { ...INITIAL_GAME_DEFAULTS };
+export let gameHub = new GameHubClient();
 
 export const assignGameDefaults = (settings: BaseSettings) => {
   gameDefaults = settings;
@@ -59,6 +56,10 @@ export const assignGameDefaults = (settings: BaseSettings) => {
 
 let animationFrame: number | null = null;
 let pauseState = true;
+let gameSession: Session;
+let sessionState: SessionState; // stored in the session storeage
+let isHost = false;
+
 const GameField: React.FC<MultiplePlayerModeProps> = () => {
   const boardWidth = determineBoardWidth();
   const boardHeight = boardWidth / gameDefaults.boardHeightDivisor;
@@ -73,17 +74,19 @@ const GameField: React.FC<MultiplePlayerModeProps> = () => {
   const [isQuestion, setIsQuestion] = useState<boolean>(false);
   const [isBackgroundMusicPlaying, setBackgroundMusicPlaying] =
     useState<boolean>(false);
+  const [isCountdownActive, setIsCountdownActive] = useState<boolean>(true);
   const [timer, setTimer] = useState<number>(0);
   const [life, setLife] = useState<number>(gameDefaults.maxLife);
   const timerRef = useRef<number | null>(null);
   const scoreRef = useRef<number>(0);
   const isSpawningBubbleRef = useRef<boolean>(false);
   const hasRunRef = useRef<boolean>(false);
+  const [gameStared, setGameStarted] = useState<boolean>(false);
 
   const backgroundAudio = new Audio(backgroundMusic);
   backgroundAudio.volume = 0.07;
 
-  const player1: player = {
+  const player1: GamePlayer = {
     x: 2,
     y: boardHeight / 2,
     width: gameDefaults.playerWidth,
@@ -92,7 +95,7 @@ const GameField: React.FC<MultiplePlayerModeProps> = () => {
     stopPlayer: false,
   };
 
-  const player2: player = {
+  const player2: GamePlayer = {
     x: boardWidth - gameDefaults.playerWidth - 2,
     y: boardHeight / 2,
     width: gameDefaults.playerWidth,
@@ -126,9 +129,16 @@ const GameField: React.FC<MultiplePlayerModeProps> = () => {
   }, []);
 
   useEffect(() => {
-    if (life <= 0) {
-      window.location.href = `/#/enter-score?score=${scoreRef.current}`;
-    }
+    if (!gameStared) return;
+
+    initializeGame();
+
+  }, [gameStared]);
+
+  useEffect(() => {
+    // if (life <= 0) {
+    //   window.location.href = `/#/enter-score?score=${scoreRef.current}`;
+    // }
   }, [life]);
 
   useEffect(() => {
@@ -182,24 +192,6 @@ const GameField: React.FC<MultiplePlayerModeProps> = () => {
     };
   }, []);
 
-  const initializeGame = () => {
-    startTimer();
-    resetScores();
-    setIsPaused(false);
-    isSpawningBubbleRef.current = false;
-    animationFrame = requestAnimationFrame(animate);
-    window.addEventListener("keydown", movePlayer);
-    window.addEventListener("keyup", stopMovingPlayer);
-
-    const gamePadHandler = createGamePadHandler();
-    const padIndex = addGamePadListener(gamePadHandler);
-    startBubbleTimer();
-
-    return () => {
-      removeGamePadListener(gamePadHandler, padIndex);
-    };
-  };
-
   const cleanupGame = () => {
     resetTimer();
     window.removeEventListener("keydown", movePlayer);
@@ -243,48 +235,29 @@ const GameField: React.FC<MultiplePlayerModeProps> = () => {
   const handlePlayerMovement = (e: KeyboardEvent, isKeyDown: boolean) => {
     const velocity = isKeyDown ? gameDefaults.moveSpeed : 0;
 
-    if (e.key === gameDefaults.key2Up) {
-      player1.velocityY = -velocity;
-      player1.stopPlayer = !isKeyDown;
-    } else if (e.key === gameDefaults.key2Down) {
-      player1.velocityY = velocity;
-      player1.stopPlayer = !isKeyDown;
+    const player = isHost ? player1 : player2;
+
+    if (e.key === gameDefaults.player1KeyUp) {
+      player.velocityY = -velocity;
+      player.stopPlayer = !isKeyDown;
+    } else if (e.key === gameDefaults.player1KeyDown) {
+      player.velocityY = velocity;
+      player.stopPlayer = !isKeyDown;
     }
 
-    if (e.key === gameDefaults.keyUp) {
-      player2.velocityY = -velocity;
-      player2.stopPlayer = !isKeyDown;
-    } else if (e.key === gameDefaults.keyDown) {
-      player2.velocityY = velocity;
-      player2.stopPlayer = !isKeyDown;
+    if (!outOfBound(player.y + player.velocityY)) {
+      if (!player.stopPlayer) {
+        player.y += player.velocityY;
+      }
     }
+
+    gameHub.detectPlayerMovement(gameSession.sessionId, { playerId: sessionState?.id!, y: player.y, x: player.x });
 
     if (e.key === "p" || e.key === "Escape") {
       triggerPause();
     }
   };
 
-  const createGamePadHandler = () => {
-    return (input: gamepad) => {
-      const isPlayer1 = input.gamepadIndex === 0;
-      const isPlayer2 = input.gamepadIndex === 1;
-
-      if (isPressReleased(input)) {
-        if (isPlayer1) player1.stopPlayer = true;
-        if (isPlayer2) player2.stopPlayer = true;
-      }
-
-      if (isDownPressed(input)) {
-        if (isPlayer1) player1.velocityY = -gameDefaults.moveSpeed;
-        if (isPlayer2) player2.velocityY = -gameDefaults.moveSpeed;
-      }
-
-      if (isUpPressed(input)) {
-        if (isPlayer1) player1.velocityY = gameDefaults.moveSpeed;
-        if (isPlayer2) player2.velocityY = gameDefaults.moveSpeed;
-      }
-    };
-  };
 
   const animate = (): void => {
     animationFrame = requestAnimationFrame(animate);
@@ -308,15 +281,17 @@ const GameField: React.FC<MultiplePlayerModeProps> = () => {
     checkCollisions();
     updateBubblePosition();
     drawBubble();
+
+    if (isHost) {
+      const sessionid = gameSessionId();
+      // gameHub.detectBallMovement(sessionid, { x: ball.x, y: ball.y });
+    }
+
   };
 
-  const drawPlayer = (context: CanvasRenderingContext2D, player: player) => {
+  const drawPlayer = (context: CanvasRenderingContext2D, player: GamePlayer) => {
     context.fillStyle = "#fff";
-    if (!outOfBound(player.y + player.velocityY)) {
-      if (!player.stopPlayer) {
-        player.y += player.velocityY;
-      }
-    }
+
     context.fillRect(
       player.x,
       player.y,
@@ -354,7 +329,7 @@ const GameField: React.FC<MultiplePlayerModeProps> = () => {
     );
   };
 
-  const handleBallCollision = (player: player) => {
+  const handleBallCollision = (player: GamePlayer) => {
     playSound(hitSound);
 
     if (player === player1 && ball.x <= player1.x + player1.width) {
@@ -455,7 +430,7 @@ const GameField: React.FC<MultiplePlayerModeProps> = () => {
   const checkCollisions = () => {
     if (!bubbleRef.current) return;
 
-    const checkBubbleCollision = (player: player) => {
+    const checkBubbleCollision = (player: GamePlayer) => {
       if (!bubbleRef.current) return;
 
       const dx = bubbleRef.current!.x - (player.x + player.width / 2);
@@ -473,6 +448,12 @@ const GameField: React.FC<MultiplePlayerModeProps> = () => {
 
     checkBubbleCollision(player1);
     checkBubbleCollision(player2);
+  };
+
+  const gameSessionId = () => {
+    const hash = location.hash;
+    const parts = hash.split('/');
+    return parts[parts.length - 1];
   };
 
   const handleBubbleTouch = () => {
@@ -498,6 +479,67 @@ const GameField: React.FC<MultiplePlayerModeProps> = () => {
     triggerPause();
     startBubbleTimer();
   };
+
+  const initializeGame = async () => {
+    try {
+      gameSession = await getSessionById(gameSessionId());
+      sessionState = getSessionState();
+
+      if (gameSession?.players?.length && gameSession?.players[0].id === sessionState.id) {
+        isHost = true;
+      }
+
+      await gameHub.start();
+      registerHubEvents();
+      await gameHub.joinLobby(gameSessionId());
+
+      setIsCountdownActive(false);
+      startTimer();
+      resetScores();
+      setIsPaused(false);
+      isSpawningBubbleRef.current = false;
+      animationFrame = requestAnimationFrame(animate);
+      window.addEventListener("keydown", movePlayer);
+      window.addEventListener("keyup", stopMovingPlayer);
+
+      startBubbleTimer();
+
+    } catch (err) {
+      alert("Unbekannter Fehler beim Versuch das Spiel zu starten!")
+    }
+  }
+
+  async function registerHubEvents() {
+    const callbacks = {
+      receiveMessage: (message: string) => {
+        console.log("Message received: " + message);
+      },
+      receivePlayerMovement: (playerId: string, x: number, y: number) => {
+        console.log(`Player ${playerId} moved to (${x}, ${y})`);
+
+        const isMe = sessionState?.id === playerId;
+        if (isMe) return;
+
+        const player = isHost ? player2 : player1;
+        player.x = x;
+        player.y = y;
+      },
+      receiveScoreAndLife: (score: number, life: number) => {
+        console.log(`Score: ${score}, Life: ${life}`);
+      },
+      receiveQuestionId: (questionId: string) => {
+        console.log(`Current Question ID: ${questionId}`);
+      },
+      receiveBallMovement: (x: number, y: number) => {
+        console.log(`Ball moved to (${x}, ${y})`);
+      },
+      receiveBallSize: (width: number, height: number) => {
+        console.log(`Ball size is (${width}, ${height})`);
+      }
+    };
+
+    gameHub.registerOnServerEvents(callbacks);
+  }
 
   const nextValue = () => {
     const valueQueue: values[] = [
@@ -541,13 +583,12 @@ const GameField: React.FC<MultiplePlayerModeProps> = () => {
       </div>
       {/* Game board */}
       <div
-        className={`gradient-border ${
-          gameEffect === "shake"
-            ? "shake-effect"
-            : gameEffect === "blackout"
+        className={`gradient-border ${gameEffect === "shake"
+          ? "shake-effect"
+          : gameEffect === "blackout"
             ? "blackout-effect"
             : ""
-        }`}
+          }`}
       >
         <canvas
           className="bg-base-300 mt-10 m-auto shadow-lg"
@@ -609,7 +650,7 @@ const GameField: React.FC<MultiplePlayerModeProps> = () => {
           value={currentValue}
         />
       )}
-      <CountdownOverlay onCountdownComplete={() => initializeGame()} />
+      {isCountdownActive && <CountdownOverlay onCountdownComplete={() => setGameStarted(true)} />}
     </section>
   );
 };

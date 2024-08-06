@@ -5,9 +5,10 @@ import backgroundMusic from "../assets/game.mp3";
 import AudioComponent from "../components/Audio";
 import { playSound } from "../utils/board";
 import { createSession, getSessionById, startGame } from "../api/api";
-import { Player } from "../utils/types";
+import { PlayerSessionData } from "../utils/types";
+import { setSessionState } from "../utils/session-state";
 
-let playerPollIntervall;
+let playerPollIntervall: any;
 const CreateGame: React.FC<{
   onSubmit: (name: string, sessionId: string) => void;
 }> = ({ onSubmit }) => {
@@ -20,7 +21,7 @@ const CreateGame: React.FC<{
   const [isLoading, setLoading] = useState<boolean>(false);
   const [showInviteMessage, setShowInviteMessage] = useState<boolean>(false);
   const [showCopyMessage, setShowCopyMessage] = useState<boolean>(false);
-  const [players, setPlayers] = useState<Player[]>([]);
+  const [players, setPlayers] = useState<PlayerSessionData[]>([]);
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -61,9 +62,11 @@ const CreateGame: React.FC<{
     playerPollIntervall = setInterval(async () => {
       try {
         const response = await getSessionById(sessionId);
-        console.log("API Response:", response);
-
         const players = response.players || [];
+
+        const me = players[0];
+        setSessionState(me.name ?? "random1", me.id, sessionId, true);
+
         console.log("Number of players:", players.length);
 
         if (players.length > 1) {
@@ -94,6 +97,7 @@ const CreateGame: React.FC<{
     await playSound(buttonClickSound);
     if (sessionId) {
       try {
+        clearInterval(playerPollIntervall)
         await startGame(sessionId);
         navigate(`/game/${sessionId}`);
       } catch (err) {
