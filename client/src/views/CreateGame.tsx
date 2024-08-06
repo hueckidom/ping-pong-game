@@ -19,6 +19,7 @@ const CreateGame: React.FC<{
   const [isWaitingForPlayer, setIsWaitingForPlayer] = useState<boolean>(false);
   const [isLoading, setLoading] = useState<boolean>(false);
   const [showInviteMessage, setShowInviteMessage] = useState<boolean>(false);
+  const [showCopyMessage, setShowCopyMessage] = useState<boolean>(false);
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -80,8 +81,12 @@ const CreateGame: React.FC<{
     if (link) {
       navigator.clipboard
         .writeText(link)
-        .then(() => alert("Link copied to clipboard"))
         .catch((err) => console.error("Failed to copy: ", err));
+      setShowCopyMessage(true);
+
+      setTimeout(() => {
+        setShowCopyMessage(false);
+      }, 2000)
     }
   };
 
@@ -97,6 +102,42 @@ const CreateGame: React.FC<{
       }
     }
   };
+
+  // Componentn <CreateButton>
+  const CreateButton = () => {
+    if (isWaitingForPlayer) {
+      return <></>
+    }
+
+    if (isLoading) {
+      return <div className="text-md p-4" > Wird erstellt... <span className="loading loading-spinner text-info"></span> </div>
+    }
+
+    return <button type="submit" className={`kave-btn ${name ? "" : "empty"}`} disabled={isLoading}>
+      <span className="kave-line"></span>
+      Erstellen
+    </button>
+  }
+
+  // Component NameInput
+  const NameInput = () => {
+    if (isWaitingForPlayer) {
+      return <span>Dein Name : <b> {name}</b></span>
+    }
+
+    return <input
+      type="text"
+      value={name}
+      autoFocus={true}
+      onChange={(e) => {
+        setName(e.target.value);
+        setEmptyError(null);
+      }}
+      placeholder="DEIN NAME"
+      className="input-kave-btn"
+      required
+    />
+  }
 
   return (
     <>
@@ -114,41 +155,39 @@ const CreateGame: React.FC<{
             onSubmit={handleSubmit}
             className="flex flex-col items-center gap-4"
           >
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => {
-                setName(e.target.value);
-                setEmptyError(null);
-              }}
-              placeholder="DEIN NAME"
-              className="input-kave-btn"
-              required
-            />
-            {isLoading ?
-              <div className="text-md p-4">Wird erstellt... <span className="loading loading-spinner text-info"></span> </div> :
-              <button type="submit" className={`kave-btn ${name ? "" : "empty"}`} disabled={isLoading}>
-                <span className="kave-line"></span>
-                Erstellen
-              </button>
-            }
+            <NameInput />
+            <CreateButton />
 
             {emptyError && <p className="mt-4 text-red-500">{emptyError}</p>}
             {error && <p className="mt-4 text-red-500">{error}</p>}
-            {link && (
-              <button
-                type="button"
-                onClick={copyToClipboard}
-                className={`kave-btn ${name ? "" : "empty"}`}
-              >
-                Copy Link
-              </button>
+
+            {showInviteMessage && (
+              <div className="hero-content text-left flex-col bg-base-300 p-4 rounded-lg">
+                <p>Leite den Einladungslink an deinen Mitspieler weiter 😊</p>
+              </div>
             )}
+            {link && (
+              <div className="relative">
+                <span className="text-xs">{link}</span>
+                <button
+                  type="button"
+                  onClick={copyToClipboard}
+                  className="btn btn-neutral btn-sm ml-2">
+                  Kopieren
+                </button>
+                {showCopyMessage && (
+                  <div className="hero-content text-right flex-col bg-base-300 p-2 animate-bounce opacity-80 rounded-lg text-xs text-green-300 absolute w-full">
+                    <p>Link in zwischenablage kopiert</p>
+                  </div>
+                )}
+              </div>
+            )}
+
           </form>
 
           {isWaitingForPlayer && (
-            <div className="mt-4 text-white flex gap-2 justify-center items-center">
-              <p>Warten auf weitere Spieler</p>
+            <div className="mt-4 text-white flex gap-2 justify-center items-center bg-base-300 p-4">
+              <p>Warte auf weiteren Spieler</p>
               <span className="loading loading-ring loading-md"></span>
             </div>
           )}
@@ -164,13 +203,9 @@ const CreateGame: React.FC<{
             </button>
           )}
 
-          {showInviteMessage && (
-            <div className="hero-content text-left flex-col bg-base-300 p-4 rounded-lg min-w-96 absolute bottom-10 left-10">
-              <p>Lade deine Freunde über Teams ein 😊</p>
-            </div>
-          )}
-        </div>
-      </div>
+
+        </div >
+      </div >
       <AudioComponent
         onAudioEnd={() => { }}
         path={backgroundMusic}

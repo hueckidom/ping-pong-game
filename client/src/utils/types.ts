@@ -99,11 +99,6 @@ export interface Session {
     players: Player[] | null;
     isSessionRunning: boolean;
 }
-
-export interface ApiResponse<T> {
-    data: T;
-}
-
 export interface PlayerPosition {
     playerId: string;
     x: number;
