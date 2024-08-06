@@ -103,3 +103,28 @@ export interface Session {
 export interface ApiResponse<T> {
     data: T;
 }
+
+export interface PlayerPosition {
+    playerId: string;
+    x: number;
+    y: number;
+}
+
+export interface PlayerScoreAndLife {
+    score: number;
+    life: number;
+}
+
+export interface QuestionItem {
+    questionId: string;
+}
+
+export interface BallPosition {
+    x: number;
+    y: number;
+}
+
+export interface BallSize {
+    width: number;
+    height: number;
+}

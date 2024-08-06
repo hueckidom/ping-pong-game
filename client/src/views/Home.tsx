@@ -15,12 +15,13 @@ import {
   removeGamePadListener,
 } from "../utils/gamepad";
 import { playSound } from "../utils/board";
+import { GameHubClient } from "../api/gamehub";
 
 const state: any = {
   activeIndex: 0,
   gameMode: 0,
 };
-const Home: React.FC<HomeProps> = ({}) => {
+const Home: React.FC<HomeProps> = ({ }) => {
   const [activeIndex, setActiveIndex] = useState(0);
   const [gameMode, setGameMode] = useState(
     localStorage.getItem("gameMode")
@@ -173,7 +174,7 @@ const Home: React.FC<HomeProps> = ({}) => {
           </div>
         </div>
         <AudioComponent
-          onAudioEnd={() => {}}
+          onAudioEnd={() => { }}
           path={backgroundMusic}
           volume={0.005}
         />
