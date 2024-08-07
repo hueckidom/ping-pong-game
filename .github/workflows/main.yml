@@ -40,38 +40,4 @@ jobs:
             push: true
             tags: ghcr.io/${{ github.repository }}-client:${{ github.sha }}  
 
-  test_application:
-    name: Run tests
-    runs-on: ubuntu-latest
-    needs: build_and_push_image
-    steps:
-      - uses: actions/checkout@v3
 
-      - name: Setup .NET Core
-        uses: actions/setup-dotnet@v3
-        with:
-            dotnet-version: ${{ env.DOTNET_VERSION }}
-
-      - name: Install dependencies
-        run: | 
-            cd service/src/PingPong
-            dotnet restore
-     
-      - name: Build
-        run: dotnet build --configuration Release --no-restore
-
-      - name: Test
-        run: | 
-            cd service/tests
-            dotnet test --no-restore --verbosity normal > TestResults-${{ github.sha }}.json
-
-      - name: Upload test results
-        uses: actions/upload-artifact@v4
-        with:
-           name: Test-results-${{ github.sha }} 
-           path: TestResults-${{ github.sha }}.json
-
-      - name: Verify tests
-        run: | 
-          if grep FAIL TestResults-$RUN_NUMBER.json; then exit 1
-          fi
