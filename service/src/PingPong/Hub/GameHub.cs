@@ -10,7 +10,6 @@ namespace PingPong.Hubs
 
     //Das 'RS' zeichen in Postman == Record Separator ( ASCII-Zeichen 30,hexadezimal 0x1E). HIER RAUSKOPIEREN --->  
     {
-
         
         public override async Task OnConnectedAsync()
         {
@@ -61,6 +60,12 @@ namespace PingPong.Hubs
         {
             string groupName = sessionId.ToString();
             await Clients.Group(groupName).SendAsync("ReceivedBallMovement", ballPosition.X, ballPosition.Y);
+        }
+
+        public async Task DetectQuestionBallMovement(Guid sessionId, BallPosition ballPosition)
+        {
+            string groupName = sessionId.ToString();
+            await Clients.Group(groupName).SendAsync("ReceiveQuestiondBallMovement", ballPosition.X, ballPosition.Y);
         }
 
         public async Task DetectBallSize(Guid sessionId, BallSize ballSize)

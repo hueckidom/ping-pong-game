@@ -67,6 +67,8 @@ const gameState = {
   isPaused: false
 }
 
+//2. Step.  gameHub.detectCurrentQuestion(gameSession.sessionId, questionId) einbringen in die Richtige Zeile
+
 const GameField: React.FC<MultiplePlayerModeProps> = () => {
   const boardWidth = determineBoardWidth();
   const boardHeight = boardWidth / gameDefaults.boardHeightDivisor;
@@ -570,6 +572,7 @@ const GameField: React.FC<MultiplePlayerModeProps> = () => {
       },
       receiveQuestionId: (questionId: string) => {
         console.log(`Current Question ID: ${questionId}`);
+        //2.Step - Nur Spieler 2 konsumiert dann die richtige frage
       },
       receiveBallMovement: (x: number, y: number) => {
         if (!gameState.isHost) {
@@ -579,7 +582,10 @@ const GameField: React.FC<MultiplePlayerModeProps> = () => {
       },
       receiveBallSize: (width: number, height: number) => {
         console.log(`Ball size is (${width}, ${height})`);
-      }
+      },
+      receiveQuestionBallMovement: (x: number, y: number) => {
+        // 1. Step - Question ball NUR bei !isHost updaten
+      },
     };
 
     gameHub.registerOnServerEvents(callbacks);

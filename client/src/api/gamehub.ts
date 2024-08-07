@@ -30,6 +30,7 @@ export class GameHubClient {
         receiveScoreAndLife: (score: number, life: number) => void,
         receiveQuestionId: (questionId: string) => void,
         receiveBallMovement: (x: number, y: number) => void,
+        receiveQuestionBallMovement: (x: number, y: number) => void,
         receiveBallSize: (width: number, height: number) => void
     }): void {
         this.connection.on("ReceiveMessage", callbacks.receiveMessage);
@@ -37,6 +38,7 @@ export class GameHubClient {
         this.connection.on("ReceivedScoreAndLife", callbacks.receiveScoreAndLife);
         this.connection.on("ReceivedQuestionId", callbacks.receiveQuestionId);
         this.connection.on("ReceivedBallMovement", callbacks.receiveBallMovement);
+        this.connection.on("ReceiveQuestiondBallMovement", callbacks.receiveBallMovement);
         this.connection.on("ReceivedBallSize", callbacks.receiveBallSize);
     }
 
@@ -75,6 +77,10 @@ export class GameHubClient {
 
     public async detectBallMovement(sessionId: string, ballPosition: BallPosition): Promise<void> {
         await this.connection.invoke("DetectBallMovement", sessionId, ballPosition);
+    }
+
+    public async detectQuestionBallMovement(sessionId: string, ballPosition: BallPosition): Promise<void> {
+        await this.connection.invoke("DetectQuestionBallMovement", sessionId, ballPosition);
     }
 
     public async detectBallSize(sessionId: string, ballSize: BallSize): Promise<void> {
