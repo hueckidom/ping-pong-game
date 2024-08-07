@@ -1,0 +1,75 @@
+name: GitOps Pipeline
+
+on:
+  push:
+    branches:
+      - master
+env:
+  DOTNET_VERSION: "8.0"
+
+
+jobs:
+  build_and_push_image:
+    name: Build and push image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      -   name: Checkout Code from repository
+          uses: actions/checkout@v2
+
+      -   name: Login to GitHub Container Registry
+          uses: docker/login-action@v1
+          with:
+            registry: ghcr.io
+            username: ${{ github.actor }}
+            password: ${{ secrets.GITHUB_TOKEN }}
+
+      -   name: Build and push service Docker image
+          uses: docker/build-push-action@v2
+          with:
+            context: ./service/src/PingPong
+            push: true
+            tags: ghcr.io/${{ github.repository }}-service:${{ github.sha }}  
+     
+      -   name: Build and push client Docker image
+          uses: docker/build-push-action@v2
+          with:
+            context: ./client/
+            push: true
+            tags: ghcr.io/${{ github.repository }}-client:${{ github.sha }}  
+
+  test_application:
+    name: Run tests
+    runs-on: ubuntu-latest
+    needs: build_and_push_image
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup .NET Core
+        uses: actions/setup-dotnet@v3
+        with:
+            dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Install dependencies
+        run: | 
+            cd service/src/PingPong
+            dotnet restore
+     
+      - name: Build
+        run: dotnet build --configuration Release --no-restore
+
+      - name: Test
+        run: dotnet test --no-restore --verbosity normal > TestResults-$RUN_NUMBER.json
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        with:
+          name: Test-results-${{ env.RUN_NUMBER }}
+          path: TestResults-${{ env.RUN_NUMBER }}.json
+
+      - name: Verify tests
+        run: | 
+          if grep FAIL TestResults-$RUN_NUMBER.json; then exit 1
+          fi
