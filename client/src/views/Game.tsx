@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import {
   BaseSettings,
   MultiplePlayerModeProps,
-  Session,
+  GameSession,
   ball,
   GamePlayer,
 } from "../utils/types";
@@ -24,7 +24,7 @@ import goalSound from "../assets/goal.mp3";
 import backgroundMusic from "../assets/game.mp3";
 import CountdownOverlay from "./CountdownOverlay";
 import { GameHubClient } from "../api/gamehub";
-import { SessionState, getSessionState } from "../utils/session-state";
+import { SessionStorage, getSessionState } from "../utils/session-state";
 import { getSessionById } from "../api/api";
 
 const INITIAL_GAME_DEFAULTS: BaseSettings = {
@@ -55,16 +55,18 @@ export const assignGameDefaults = (settings: BaseSettings) => {
 };
 
 let animationFrame: number | null = null;
-let pauseState = true;
-let gameSession: Session;
-let sessionState: SessionState; // stored in the session storeage
-let isHost = false;
+let gameSession: GameSession;
+let sessionState: SessionStorage; // stored in the session storeage
+
+// simple state management
 const gameState = {
   timer: 0,
   score: 0,
   life: gameDefaults.maxLife,
-
+  isHost: false,
+  isPaused: false
 }
+
 const GameField: React.FC<MultiplePlayerModeProps> = () => {
   const boardWidth = determineBoardWidth();
   const boardHeight = boardWidth / gameDefaults.boardHeightDivisor;
@@ -134,7 +136,7 @@ const GameField: React.FC<MultiplePlayerModeProps> = () => {
   }, []);
 
   useEffect(() => {
-    if (score === 0 || life === 0 || !isHost) return;
+    if (score === 0 || life === 0 || !gameState.isHost) return;
 
     gameState.score = score;
     gameState.life = life;
@@ -190,7 +192,7 @@ const GameField: React.FC<MultiplePlayerModeProps> = () => {
       }
     };
     document.addEventListener("visibilitychange", handleVisibilityChange);
-    pauseState = isPaused;
+    gameState.isPaused = isPaused;
 
     return () => {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
@@ -257,7 +259,7 @@ const GameField: React.FC<MultiplePlayerModeProps> = () => {
   const handlePlayerMovement = (e: KeyboardEvent, isKeyDown: boolean) => {
     const velocity = isKeyDown ? gameDefaults.moveSpeed : 0;
 
-    const player = isHost ? player1 : player2;
+    const player = gameState.isHost ? player1 : player2;
 
     if (e.key === gameDefaults.player1KeyUp) {
       player.velocityY = -velocity;
@@ -283,7 +285,7 @@ const GameField: React.FC<MultiplePlayerModeProps> = () => {
   const animate = (): void => {
     animationFrame = requestAnimationFrame(animate);
 
-    if (!pauseState && contextRef.current) {
+    if (!gameState.isPaused && contextRef.current) {
       updateGameField();
     }
   };
@@ -299,7 +301,10 @@ const GameField: React.FC<MultiplePlayerModeProps> = () => {
     ball.y += ball.velocityY;
     drawBall(context);
 
-    checkCollisions();
+    if (gameState.isHost) {
+      checkBubbleCollisions();
+    }
+
     updateBubblePosition();
     drawBubble();
   };
@@ -366,7 +371,7 @@ const GameField: React.FC<MultiplePlayerModeProps> = () => {
     //   ball.velocityY = Math.random() * 3 + 1.5;
     // }
 
-    if (collided && isHost) {
+    if (collided && gameState.isHost) {
       setScore(gameState.score + gameState.timer);
 
       // little hack to create a fake sync check if good
@@ -455,7 +460,7 @@ const GameField: React.FC<MultiplePlayerModeProps> = () => {
     );
   };
 
-  const checkCollisions = () => {
+  const checkBubbleCollisions = () => {
     if (!bubbleRef.current) return;
 
     const checkBubbleCollision = (player: GamePlayer) => {
@@ -510,16 +515,7 @@ const GameField: React.FC<MultiplePlayerModeProps> = () => {
 
   const initializeGame = async () => {
     try {
-      gameSession = await getSessionById(gameSessionId());
-      sessionState = getSessionState();
-
-      if (gameSession?.players?.length && gameSession?.players[0].id === sessionState.id) {
-        isHost = true;
-      }
-
-      await gameHub.start();
-      registerHubEvents();
-      await gameHub.joinLobby(gameSessionId());
+      await initializeHubSession();
 
       setIsCountdownActive(false);
       resetGameState();
@@ -533,7 +529,25 @@ const GameField: React.FC<MultiplePlayerModeProps> = () => {
       startBubbleTimer();
 
     } catch (err) {
+      console.error(err);
+    }
+  }
+
+  async function initializeHubSession() {
+    try {
+      gameSession = await getSessionById(gameSessionId());
+      sessionState = getSessionState();
+
+      if (gameSession?.players?.length && gameSession?.players[0].id === sessionState.id) {
+        gameState.isHost = true;
+      }
+
+      await gameHub.start();
+      registerHubEvents();
+      await gameHub.joinLobby(gameSessionId());
+    } catch (err) {
       alert("Unbekannter Fehler beim Versuch das Spiel zu starten!")
+      throw err;
     }
   }
 
@@ -545,12 +559,12 @@ const GameField: React.FC<MultiplePlayerModeProps> = () => {
         const isMe = sessionState?.id === playerId;
         if (isMe) return;
 
-        const player = isHost ? player2 : player1;
+        const player = gameState.isHost ? player2 : player1;
         player.x = x;
         player.y = y;
       },
       receiveScoreAndLife: (score: number, life: number) => {
-        if (!isHost) {
+        if (!gameState.isHost) {
           setScore(score);
           setLife(life);
         }
@@ -559,7 +573,7 @@ const GameField: React.FC<MultiplePlayerModeProps> = () => {
         console.log(`Current Question ID: ${questionId}`);
       },
       receiveBallMovement: (x: number, y: number) => {
-        if (!isHost) {
+        if (!gameState.isHost) {
           ball.x = x;
           ball.y = y;
         }

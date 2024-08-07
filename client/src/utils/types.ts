@@ -95,7 +95,7 @@ export interface PlayerSessionData {
     score: number;
 }
 
-export interface Session {
+export interface GameSession {
     sessionId: string;
     players: PlayerSessionData[] | null;
     isSessionRunning: boolean;

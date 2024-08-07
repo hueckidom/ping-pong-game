@@ -1,6 +1,6 @@
 // src/utils/ApiService.ts
 import axios from 'axios';
-import { PlayerSessionData, Session } from '../utils/types';
+import { PlayerSessionData, GameSession } from '../utils/types';
 import { apiUrl } from "../utils/config";
 
 export const joinRoom = async (sessionId: string, playerName: string): Promise<void> => {
@@ -18,23 +18,23 @@ export const addScores = async (sessionId: string, playerId: string, name: strin
     return response.data;
 };
 
-export const createSession = async (name: string): Promise<Session> => {
-    const response = await axios.post<Session>(`${apiUrl}/Session/CreateSession`, { name });
+export const createSession = async (name: string): Promise<GameSession> => {
+    const response = await axios.post<GameSession>(`${apiUrl}/Session/CreateSession`, { name });
     return response.data;
 };
 
-export const getAllSessions = async (): Promise<Session[]> => {
-    const response = await axios.get<Session[]>(`${apiUrl}/Session/GetAllSessions`);
+export const getAllSessions = async (): Promise<GameSession[]> => {
+    const response = await axios.get<GameSession[]>(`${apiUrl}/Session/GetAllSessions`);
     return response.data;
 };
 
-export const getSessionById = async (sessionId: string): Promise<Session> => {
-    const response = await axios.get<Session>(`${apiUrl}/Session/GetSessionById/${sessionId}`);
+export const getSessionById = async (sessionId: string): Promise<GameSession> => {
+    const response = await axios.get<GameSession>(`${apiUrl}/Session/GetSessionById/${sessionId}`);
     return response.data;
 };
 
-export const startGame = async (sessionId: string): Promise<Session> => {
-    const response = await axios.post<Session>(`${apiUrl}/Session/Startgame`, { sessionId });
+export const startGame = async (sessionId: string): Promise<GameSession> => {
+    const response = await axios.post<GameSession>(`${apiUrl}/Session/Startgame`, { sessionId });
     return response.data;
 };
 
