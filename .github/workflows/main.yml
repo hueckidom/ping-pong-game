@@ -62,14 +62,14 @@ jobs:
 
       - name: Test
         run: | 
-            cd service/src/PingPong
+            cd service/tests
             dotnet test --no-restore --verbosity normal > TestResults-$RUN_NUMBER.json
 
       - name: Upload test results
         uses: actions/upload-artifact@v4
         with:
-          name: Test-results-${{ env.RUN_NUMBER }}
-          path: TestResults-${{ env.RUN_NUMBER }}.json
+           name: Test-results-${{ env.RUN_NUMBER }}
+           path: TestResults-${{ env.RUN_NUMBER }}.json
 
       - name: Verify tests
         run: | 
