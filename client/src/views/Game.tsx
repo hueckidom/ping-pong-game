@@ -297,12 +297,19 @@ const GameField: React.FC<MultiplePlayerModeProps> = () => {
     drawPlayer(context, player1);
     drawPlayer(context, player2);
 
-    ball.x += ball.velocityX;
-    ball.y += ball.velocityY;
+    if (gameState.isHost) {
+      ball.x += ball.velocityX;
+      ball.y += ball.velocityY;
+    }
+
     drawBall(context);
 
     if (gameState.isHost) {
       checkBubbleCollisions();
+      gameHub.detectBallMovement(gameSession.sessionId, {
+        x: ball.x,
+        y: ball.y
+      })
     }
 
     updateBubblePosition();
@@ -373,14 +380,6 @@ const GameField: React.FC<MultiplePlayerModeProps> = () => {
 
     if (collided && gameState.isHost) {
       setScore(gameState.score + gameState.timer);
-
-      // little hack to create a fake sync check if good
-      setTimeout(() => {
-        gameHub.detectBallMovement(gameSession.sessionId, {
-          x: ball.x,
-          y: ball.y
-        })
-      }, 250);
     }
   };
 
