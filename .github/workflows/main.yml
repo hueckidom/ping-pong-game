@@ -61,7 +61,9 @@ jobs:
         run: dotnet build --configuration Release --no-restore
 
       - name: Test
-        run: dotnet test --no-restore --verbosity normal > TestResults-$RUN_NUMBER.json
+        run: | 
+            cd service/src/PingPong
+            dotnet test --no-restore --verbosity normal > TestResults-$RUN_NUMBER.json
 
       - name: Upload test results
         uses: actions/upload-artifact@v4
