@@ -368,3 +368,6 @@ FodyWeavers.xsd
 
 client/node_modules
 client/dist
+
+# Deployment files
+terraform.tfvars
