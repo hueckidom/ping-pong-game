@@ -545,6 +545,8 @@ const GameField: React.FC<MultiplePlayerModeProps> = () => {
   };
 
   const handleAnswer = (isCorrect: boolean) => {
+    setIsAnswerCorrect(isCorrect);
+
     if (gameState.isHost) {
       if (isCorrect) {
         setScore(gameState.score + timer);
@@ -645,8 +647,7 @@ const GameField: React.FC<MultiplePlayerModeProps> = () => {
         console.log(`Ball size is (${width}, ${height})`);
       },
       receivedAnsweredQuestion: (questionindex: number) => {
-        const isCorrect = checkAnswerToQuestion(question!, questionindex);
-        setIsAnswerCorrect(isCorrect);
+        const isCorrect = checkAnswerToQuestion(gameState.question!, questionindex);
         handleAnswer(isCorrect);
       },
       receivedDetectSpawnQuestionBall: (x: number, y: number) => {
