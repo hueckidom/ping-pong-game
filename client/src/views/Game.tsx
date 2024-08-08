@@ -145,11 +145,11 @@ const GameField: React.FC<MultiplePlayerModeProps> = () => {
   }, []);
 
   useEffect(() => {
-    if (score === 0 || life === 0 || !gameState.isHost) return;
+    if (!gameState.isHost) return;
 
     gameState.score = score;
     gameState.life = life;
-    gameHub.detectPlayerScoreAndLife(gameSession.sessionId, {
+    gameHub.pushPlayerScoreAndLife(gameSession.sessionId, {
       life,
       score,
     });

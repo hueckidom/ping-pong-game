@@ -103,7 +103,7 @@ export class GameHubClient {
     await this.connection.invoke("DetectPlayerSize", sessionId, playerSize);
   }
 
-  public async detectPlayerScoreAndLife(
+  public async pushPlayerScoreAndLife(
     sessionId: string,
     scoreAndLife: PlayerScoreAndLife
   ): Promise<void> {
