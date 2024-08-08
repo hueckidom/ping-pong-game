@@ -22,6 +22,7 @@ variable "s3_bucket_name" {
   description = "The name of S3 bucket"
   default     = "ping-pong-game"
 }
-variable "go_api_app_github_repo_url" {
+variable "ping_pong_game_github_repo_url" {
   description = "Github repository URL of an application"
   default = "https://github.com/hueckidom/ping-pong-game"
+}

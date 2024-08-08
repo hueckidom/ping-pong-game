@@ -66,3 +66,21 @@ resource "helm_release" "argocd" {
   timeout = 600
   skip_crds = true
 }
+
+resource "kubectl_manifest" "argocd-ping-pong-service" {
+  depends_on = [helm_release.argocd, stackit_ske_cluster.ske]
+  yaml_body = templatefile("${path.module}/argocd_templates/argocd-ping-pong-service.yaml", {
+    github_repo_url = var.ping_pong_game_github_repo_url
+    helm_chart_path = "helm-chart"
+    resource_name = "ping-pong-service"
+  })
+}
+
+resource "kubectl_manifest" "argocd-ping-pong-client" {
+  depends_on = [helm_release.argocd, stackit_ske_cluster.ske]
+  yaml_body = templatefile("${path.module}/argocd_templates/argocd-ping-pong-client.yaml", {
+    github_repo_url = var.ping_pong_game_github_repo_url
+    helm_chart_path = "helm-chart"
+    resource_name = "ping-pong-client"
+  })
+}
