@@ -372,3 +372,4 @@ client/dist
 # Deployment files
 terraform.tfvars
 .terraform
+.terraform.lock.hcl
