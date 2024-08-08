@@ -25,19 +25,20 @@ const CountdownOverlay: React.FC<CountdownOverlayProps> = ({
   }, [countdown, onCountdownComplete]);
 
   return (
-    countdown !== -1 && (
-      <div className="countdown-bg">
-        <div className="hero-content text-center flex flex-col items-center">
-          <div className="mb-12 floating">
-            <h1 className="sweet-title">
-              <span data-text={countdown > 0 ? countdown : "Start!"}>
-                {countdown > 0 ? countdown : "Start!"}
-              </span>
-            </h1>
+    <>
+      {countdown !== -1 && (
+        <div className="countdown-bg">
+          <div className="hero-content text-center flex flex-col items-center">
+            <div className="mb-12 floating">
+              <h1 className="sweet-title">
+                <span data-text={countdown > 0 ? countdown : "Start!"}>
+                  {countdown > 0 ? countdown : "Start!"}
+                </span>
+              </h1>
+            </div>
           </div>
-        </div>
-      </div>
-    )
+        </div>)}
+    </>
   );
 };
 
