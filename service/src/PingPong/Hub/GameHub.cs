@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.SignalR;
 using PingPong.Models;
 using PingPong.Models.HubItems;
-using PingPong.Models.PlayerIngameModel; 
+using PingPong.Models.PlayerIngameModel;
 using PingPong.Models.PlayerPosition;
 
 namespace PingPong.Hubs
@@ -10,7 +10,7 @@ namespace PingPong.Hubs
 
     //Das 'RS' zeichen in Postman == Record Separator ( ASCII-Zeichen 30,hexadezimal 0x1E). HIER RAUSKOPIEREN --->  
     {
-        
+
         public override async Task OnConnectedAsync()
         {
             await Clients.All.SendAsync("Receive Message", $" {Context.ConnectionId} has connected");
@@ -49,11 +49,16 @@ namespace PingPong.Hubs
             await Clients.Group(groupName).SendAsync("ReceivedScoreAndLife", scoreAndLife.Score, scoreAndLife.Life);
         }
 
-        public async Task DetectCurrentQuestion(Guid sessionId, QuestionItem currentQuestionId)
+        public async Task DetectCurrentQuestion(Guid sessionId, QuestionItem item)
         {
             string groupName = sessionId.ToString();
-            Guid.Parse(currentQuestionId.QuestionId.ToString());
-            await Clients.Group(groupName).SendAsync("Received" + currentQuestionId.QuestionId);
+            await Clients.Group(groupName).SendAsync("ReceivedCurrentQuestion", item.QuestionId);
+        }
+
+        public async Task DetectAnswerQuestion(Guid sessionId, AnswerQuestionItem item)
+        {
+            string groupName = sessionId.ToString();
+            await Clients.Group(groupName).SendAsync("ReceivedAnsweredQuestion", item.Questionindex);
         }
 
         public async Task DetectBallMovement(Guid sessionId, BallPosition ballPosition)
@@ -66,6 +71,11 @@ namespace PingPong.Hubs
         {
             string groupName = sessionId.ToString();
             await Clients.Group(groupName).SendAsync("ReceiveQuestiondBallMovement", ballPosition.X, ballPosition.Y);
+        }
+        public async Task DetectSpawnQuestionBall(Guid sessionId, BallPosition ballPosition)
+        {
+            string groupName = sessionId.ToString();
+            await Clients.Group(groupName).SendAsync("ReceivedDetectSpawnQuestionBall", ballPosition.X, ballPosition.Y);
         }
 
         public async Task DetectBallSize(Guid sessionId, BallSize ballSize)

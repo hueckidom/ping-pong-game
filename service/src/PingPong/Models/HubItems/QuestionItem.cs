@@ -2,6 +2,6 @@
 {
     public class QuestionItem
     {
-        public Guid QuestionId { get; set; }
+        public string QuestionId { get; set; }
     }
 }

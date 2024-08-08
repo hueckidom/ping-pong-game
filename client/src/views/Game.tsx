@@ -5,12 +5,11 @@ import {
   GameSession,
   ball,
   GamePlayer,
+  Question,
 } from "../utils/types";
 import { determineBoardWidth, playSound } from "../utils/board";
 import { values } from "../utils/options";
-import QuestionDialogCmp, {
-  askedQuestionsSet,
-} from "../components/QuestionDialog";
+import QuestionDialogCmp from "../components/QuestionDialog";
 
 import questionSound from "../assets/questions.mp3";
 import bubblePicture from "../assets/ball.png";
@@ -26,6 +25,12 @@ import CountdownOverlay from "./CountdownOverlay";
 import { GameHubClient } from "../api/gamehub";
 import { SessionStorage, getSessionState } from "../utils/session-state";
 import { getSessionById } from "../api/api";
+import {
+  askedQuestionsSet,
+  checkAnswerToQuestion,
+  getQuestionById,
+  getRandomQuestion,
+} from "../utils/question";
 
 const INITIAL_GAME_DEFAULTS: BaseSettings = {
   velocityXIncrement: 1.2,
@@ -64,10 +69,10 @@ const gameState = {
   score: 0,
   life: gameDefaults.maxLife,
   isHost: false,
-  isPaused: false
-}
-
-//2. Step.  gameHub.detectCurrentQuestion(gameSession.sessionId, questionId) einbringen in die Richtige Zeile
+  isPaused: false,
+  question: undefined,
+  isSpawningBubble: false
+};
 
 const GameField: React.FC<MultiplePlayerModeProps> = () => {
   const boardWidth = determineBoardWidth();
@@ -80,17 +85,19 @@ const GameField: React.FC<MultiplePlayerModeProps> = () => {
 
   const [currentValue, setCurrentValue] = useState<values>("Vertrauen");
   const [isPaused, setIsPaused] = useState<boolean>(false);
-  const [isQuestion, setIsQuestion] = useState<boolean>(false);
   const [isBackgroundMusicPlaying, setBackgroundMusicPlaying] =
     useState<boolean>(false);
   const [isCountdownActive, setIsCountdownActive] = useState<boolean>(true);
   const [timer, setTimer] = useState<number>(0);
   const [life, setLife] = useState<number>(gameDefaults.maxLife);
   const timerRef = useRef<number | null>(null);
-  const isSpawningBubbleRef = useRef<boolean>(false);
   const hasRunRef = useRef<boolean>(false);
   const [gameStared, setGameStarted] = useState<boolean>(false);
   const [score, setScore] = useState<number>(0);
+  const [question, setQuestion] = useState<Question | undefined>(undefined);
+  const [isAnswerCorrect, setIsAnswerCorrect] = useState<boolean | undefined>(
+    undefined
+  );
 
   const backgroundAudio = new Audio(backgroundMusic);
   backgroundAudio.volume = 0.07;
@@ -138,25 +145,37 @@ const GameField: React.FC<MultiplePlayerModeProps> = () => {
   }, []);
 
   useEffect(() => {
-    if (score === 0 || life === 0 || !gameState.isHost) return;
+    if (!gameState.isHost) return;
 
     gameState.score = score;
     gameState.life = life;
-    gameHub.detectPlayerScoreAndLife(gameSession.sessionId, {
+    gameHub.pushPlayerScoreAndLife(gameSession.sessionId, {
       life,
-      score
+      score,
     });
   }, [score, life]);
+
+
+  useEffect(() => {
+    gameState.question = question as any;
+  }, [question]);
 
   useEffect(() => {
     gameState.timer = timer;
   }, [timer]);
 
   useEffect(() => {
+    if (gameState.isHost && question) {
+      gameHub.pushCurrentQuestion(gameSession.sessionId, {
+        questionId: question.question,
+      });
+    }
+  }, [question])
+
+  useEffect(() => {
     if (!gameStared) return;
 
     initializeGame();
-
   }, [gameStared]);
 
   useEffect(() => {
@@ -277,7 +296,11 @@ const GameField: React.FC<MultiplePlayerModeProps> = () => {
       }
     }
 
-    gameHub.detectPlayerMovement(gameSession.sessionId, { playerId: sessionState?.id!, y: player.y, x: player.x });
+    gameHub.detectPlayerMovement(gameSession.sessionId, {
+      playerId: sessionState?.id!,
+      y: player.y,
+      x: player.x,
+    });
 
     if (e.key === "p" || e.key === "Escape") {
       triggerPause();
@@ -310,15 +333,21 @@ const GameField: React.FC<MultiplePlayerModeProps> = () => {
       checkBubbleCollisions();
       gameHub.detectBallMovement(gameSession.sessionId, {
         x: ball.x,
-        y: ball.y
-      })
+        y: ball.y,
+      });
     }
 
-    updateBubblePosition();
+    if (gameState.isHost) {
+      updateBubblePosition();
+    }
+
     drawBubble();
   };
 
-  const drawPlayer = (context: CanvasRenderingContext2D, player: GamePlayer) => {
+  const drawPlayer = (
+    context: CanvasRenderingContext2D,
+    player: GamePlayer
+  ) => {
     context.fillStyle = "#fff";
 
     context.fillRect(
@@ -407,8 +436,9 @@ const GameField: React.FC<MultiplePlayerModeProps> = () => {
   };
 
   const startBubbleTimer = () => {
-    if (isSpawningBubbleRef.current) return;
-    isSpawningBubbleRef.current = true;
+    if (gameState.isSpawningBubble || !gameState.isHost) return;
+
+    gameState.isSpawningBubble = true;
     const spawnInterval = Math.random() * 5000 + 12000;
     setTimeout(spawnBubble, spawnInterval);
   };
@@ -422,6 +452,13 @@ const GameField: React.FC<MultiplePlayerModeProps> = () => {
       velocityX: ball.velocityX,
       velocityY: 1.2,
     };
+
+    if (gameState.isHost) {
+      gameHub.pushSpawnQuestionBall(gameSession.sessionId, {
+        x: bubbleRef.current.x,
+        y: bubbleRef.current.y
+      })
+    }
   };
 
   const updateBubblePosition = () => {
@@ -446,6 +483,11 @@ const GameField: React.FC<MultiplePlayerModeProps> = () => {
     }
 
     bubbleRef.current = { ...bubbleRef.current, x: newX, y: newY };
+
+    gameHub.pushQuestionBallMovement(gameSession.sessionId, {
+      x: bubbleRef.current.x,
+      y: bubbleRef.current.y
+    })
   };
 
   const drawBubble = () => {
@@ -486,32 +528,39 @@ const GameField: React.FC<MultiplePlayerModeProps> = () => {
 
   const gameSessionId = () => {
     const hash = location.hash;
-    const parts = hash.split('/');
+    const parts = hash.split("/");
     return parts[parts.length - 1];
   };
 
   const handleBubbleTouch = () => {
+    const question = getRandomQuestion();
+    setQuestion(question);
+
     setIsPaused(true);
     playSound(questionSound);
+  };
+
+  const answeredQuestion = (questionIndex: number) => {
+    gameHub.pushAnsweredQuestion(gameSession.sessionId, { questionIndex });
+  };
+
+  const handleAnswer = (isCorrect: boolean) => {
+    if (gameState.isHost) {
+      if (isCorrect) {
+        setScore(gameState.score + timer);
+      } else {
+        setLife((prevLife) => prevLife - 1);
+      }
+    }
+
     setTimeout(() => {
-      setIsQuestion(true);
-    });
-  };
-
-  const handleCorrectAnswer = () => {
-    setScore(gameState.score + timer)
-    setIsQuestion(false);
-    nextValue();
-    triggerPause();
-    startBubbleTimer();
-  };
-
-  const handleWrongAnswer = () => {
-    setLife((prevLife) => prevLife - 1);
-    setIsQuestion(false);
-    nextValue();
-    triggerPause();
-    startBubbleTimer();
+      setQuestion(undefined);
+      setIsAnswerCorrect(undefined);
+      nextValue();
+      triggerPause();
+      gameState.isSpawningBubble = false;
+      startBubbleTimer();
+    }, 2000);
   };
 
   const initializeGame = async () => {
@@ -522,24 +571,26 @@ const GameField: React.FC<MultiplePlayerModeProps> = () => {
       resetGameState();
       startTimer();
       setIsPaused(false);
-      isSpawningBubbleRef.current = false;
+      gameState.isSpawningBubble = false;
       animationFrame = requestAnimationFrame(animate);
       window.addEventListener("keydown", movePlayer);
       window.addEventListener("keyup", stopMovingPlayer);
 
       startBubbleTimer();
-
     } catch (err) {
       console.error(err);
     }
-  }
+  };
 
   async function initializeHubSession() {
     try {
       gameSession = await getSessionById(gameSessionId());
       sessionState = getSessionState();
 
-      if (gameSession?.players?.length && gameSession?.players[0].id === sessionState.id) {
+      if (
+        gameSession?.players?.length &&
+        gameSession?.players[0].id === sessionState.id
+      ) {
         gameState.isHost = true;
       }
 
@@ -547,15 +598,14 @@ const GameField: React.FC<MultiplePlayerModeProps> = () => {
       registerHubEvents();
       await gameHub.joinLobby(gameSessionId());
     } catch (err) {
-      alert("Unbekannter Fehler beim Versuch das Spiel zu starten!")
+      alert("Unbekannter Fehler beim Versuch das Spiel zu starten!");
       throw err;
     }
   }
 
   async function registerHubEvents() {
     const callbacks = {
-      receiveMessage: (message: string) => {
-      },
+      receiveMessage: (message: string) => { },
       receivePlayerMovement: (playerId: string, x: number, y: number) => {
         const isMe = sessionState?.id === playerId;
         if (isMe) return;
@@ -570,22 +620,45 @@ const GameField: React.FC<MultiplePlayerModeProps> = () => {
           setLife(life);
         }
       },
-      receiveQuestionId: (questionId: string) => {
-        console.log(`Current Question ID: ${questionId}`);
-        //2.Step - Nur Spieler 2 konsumiert dann die richtige frage
-      },
       receiveBallMovement: (x: number, y: number) => {
         if (!gameState.isHost) {
           ball.x = x;
           ball.y = y;
         }
       },
+      receiveQuestionBallMovement: (x: number, y: number) => {
+        if (!gameState.isHost && bubbleRef.current) {
+          bubbleRef.current.x = x;
+          bubbleRef.current.y = y;
+        } 
+      },
+      receivedCurrentQuestion: (questionId: string) => {
+        if (!gameState.isHost) {
+          bubbleRef.current = null;
+          setIsPaused(true);
+          playSound(questionSound);
+          const question = getQuestionById(questionId);
+          setQuestion(question);
+        }
+      },
       receiveBallSize: (width: number, height: number) => {
         console.log(`Ball size is (${width}, ${height})`);
       },
-      receiveQuestionBallMovement: (x: number, y: number) => {
-        // 1. Step - Question ball NUR bei !isHost updaten
+      receivedAnsweredQuestion: (questionindex: number) => {
+        const isCorrect = checkAnswerToQuestion(question!, questionindex);
+        setIsAnswerCorrect(isCorrect);
+        handleAnswer(isCorrect);
       },
+      receivedDetectSpawnQuestionBall: (x: number, y: number) => {
+        if (bubbleRef.current) return;
+        bubbleRef.current = {
+          x,
+          y,
+          radius: 26,
+          velocityX: ball.velocityX,
+          velocityY: 1.2,
+        };
+      }
     };
 
     gameHub.registerOnServerEvents(callbacks);
@@ -668,9 +741,7 @@ const GameField: React.FC<MultiplePlayerModeProps> = () => {
             </svg>
           </div>
           <div className="stat-title">Punkte</div>
-          <div className="stat-value text-secondary glow">
-            {score}
-          </div>
+          <div className="stat-value text-secondary glow">{score}</div>
         </div>
         <div className="stat place-items-center">
           <div className="stat-figure text-primary">
@@ -693,14 +764,17 @@ const GameField: React.FC<MultiplePlayerModeProps> = () => {
         </div>
       </div>
 
-      {isQuestion && (
+      {question && (
         <QuestionDialogCmp
-          correct={handleCorrectAnswer}
-          wrong={handleWrongAnswer}
+          question={question}
+          isAnsweredQuestionCorrect={isAnswerCorrect}
+          answeredQuestion={answeredQuestion}
           value={currentValue}
         />
       )}
-      {isCountdownActive && <CountdownOverlay onCountdownComplete={() => setGameStarted(true)} />}
+      {isCountdownActive && (
+        <CountdownOverlay onCountdownComplete={() => setGameStarted(true)} />
+      )}
     </section>
   );
 };
