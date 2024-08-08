@@ -5,11 +5,11 @@
 replicaCount: 1
 
 image:
-  registry: docker.io
-  repository: valuehero-pingpong-client
+  registry: ghcr.io
+  repository: hueckidom/ping-pong-game-client
   pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
-  tag: ""
+  tag: "2d01a2593911d05193803e15c6016e66c754ce5b"
 
 imagePullSecrets: []
 nameOverride: ""
