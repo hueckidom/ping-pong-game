@@ -70,9 +70,9 @@ const gameState = {
   life: gameDefaults.maxLife,
   isHost: false,
   isPaused: false,
+  question: undefined,
+  isSpawningBubble: false
 };
-
-//2. Step.  gameHub.detectCurrentQuestion(gameSession.sessionId, questionId) einbringen in die Richtige Zeile
 
 const GameField: React.FC<MultiplePlayerModeProps> = () => {
   const boardWidth = determineBoardWidth();
@@ -91,7 +91,6 @@ const GameField: React.FC<MultiplePlayerModeProps> = () => {
   const [timer, setTimer] = useState<number>(0);
   const [life, setLife] = useState<number>(gameDefaults.maxLife);
   const timerRef = useRef<number | null>(null);
-  const isSpawningBubbleRef = useRef<boolean>(false);
   const hasRunRef = useRef<boolean>(false);
   const [gameStared, setGameStarted] = useState<boolean>(false);
   const [score, setScore] = useState<number>(0);
@@ -156,9 +155,22 @@ const GameField: React.FC<MultiplePlayerModeProps> = () => {
     });
   }, [score, life]);
 
+
+  useEffect(() => {
+    gameState.question = question as any;
+  }, [question]);
+
   useEffect(() => {
     gameState.timer = timer;
   }, [timer]);
+
+  useEffect(() => {
+    if (gameState.isHost && question) {
+      gameHub.pushCurrentQuestion(gameSession.sessionId, {
+        questionId: question.question,
+      });
+    }
+  }, [question])
 
   useEffect(() => {
     if (!gameStared) return;
@@ -424,8 +436,9 @@ const GameField: React.FC<MultiplePlayerModeProps> = () => {
   };
 
   const startBubbleTimer = () => {
-    if (isSpawningBubbleRef.current) return;
-    isSpawningBubbleRef.current = true;
+    if (gameState.isSpawningBubble || !gameState.isHost) return;
+
+    gameState.isSpawningBubble = true;
     const spawnInterval = Math.random() * 5000 + 12000;
     setTimeout(spawnBubble, spawnInterval);
   };
@@ -439,6 +452,13 @@ const GameField: React.FC<MultiplePlayerModeProps> = () => {
       velocityX: ball.velocityX,
       velocityY: 1.2,
     };
+
+    if (gameState.isHost) {
+      gameHub.pushSpawnQuestionBall(gameSession.sessionId, {
+        x: bubbleRef.current.x,
+        y: bubbleRef.current.y
+      })
+    }
   };
 
   const updateBubblePosition = () => {
@@ -463,6 +483,11 @@ const GameField: React.FC<MultiplePlayerModeProps> = () => {
     }
 
     bubbleRef.current = { ...bubbleRef.current, x: newX, y: newY };
+
+    gameHub.pushQuestionBallMovement(gameSession.sessionId, {
+      x: bubbleRef.current.x,
+      y: bubbleRef.current.y
+    })
   };
 
   const drawBubble = () => {
@@ -509,26 +534,23 @@ const GameField: React.FC<MultiplePlayerModeProps> = () => {
 
   const handleBubbleTouch = () => {
     const question = getRandomQuestion();
-    gameHub.pushCurrentQuestion(gameSession.sessionId, {
-      questionId: question.question,
-    });
     setQuestion(question);
+
     setIsPaused(true);
     playSound(questionSound);
-    setTimeout(() => {
-      setQuestion(undefined);
-    });
   };
 
-  const answeredQuestion = (index: number) => {
-    gameHub.pushAnsweredQuestion(gameSession.sessionId, index);
+  const answeredQuestion = (questionIndex: number) => {
+    gameHub.pushAnsweredQuestion(gameSession.sessionId, { questionIndex });
   };
 
   const handleAnswer = (isCorrect: boolean) => {
-    if (isCorrect) {
-      setScore(gameState.score + timer);
-    } else {
-      setLife((prevLife) => prevLife - 1);
+    if (gameState.isHost) {
+      if (isCorrect) {
+        setScore(gameState.score + timer);
+      } else {
+        setLife((prevLife) => prevLife - 1);
+      }
     }
 
     setTimeout(() => {
@@ -536,6 +558,7 @@ const GameField: React.FC<MultiplePlayerModeProps> = () => {
       setIsAnswerCorrect(undefined);
       nextValue();
       triggerPause();
+      gameState.isSpawningBubble = false;
       startBubbleTimer();
     }, 2000);
   };
@@ -548,7 +571,7 @@ const GameField: React.FC<MultiplePlayerModeProps> = () => {
       resetGameState();
       startTimer();
       setIsPaused(false);
-      isSpawningBubbleRef.current = false;
+      gameState.isSpawningBubble = false;
       animationFrame = requestAnimationFrame(animate);
       window.addEventListener("keydown", movePlayer);
       window.addEventListener("keyup", stopMovingPlayer);
@@ -582,7 +605,7 @@ const GameField: React.FC<MultiplePlayerModeProps> = () => {
 
   async function registerHubEvents() {
     const callbacks = {
-      receiveMessage: (message: string) => {},
+      receiveMessage: (message: string) => { },
       receivePlayerMovement: (playerId: string, x: number, y: number) => {
         const isMe = sessionState?.id === playerId;
         if (isMe) return;
@@ -604,15 +627,14 @@ const GameField: React.FC<MultiplePlayerModeProps> = () => {
         }
       },
       receiveQuestionBallMovement: (x: number, y: number) => {
-        if (!gameState.isHost) {
-          gameHub.detectQuestionBallMovement(gameSession.sessionId, {
-            x: ball.x,
-            y: ball.y,
-          });
-        }
+        if (!gameState.isHost && bubbleRef.current) {
+          bubbleRef.current.x = x;
+          bubbleRef.current.y = y;
+        } 
       },
       receivedCurrentQuestion: (questionId: string) => {
         if (!gameState.isHost) {
+          bubbleRef.current = null;
           setIsPaused(true);
           playSound(questionSound);
           const question = getQuestionById(questionId);
@@ -627,6 +649,16 @@ const GameField: React.FC<MultiplePlayerModeProps> = () => {
         setIsAnswerCorrect(isCorrect);
         handleAnswer(isCorrect);
       },
+      receivedDetectSpawnQuestionBall: (x: number, y: number) => {
+        if (bubbleRef.current) return;
+        bubbleRef.current = {
+          x,
+          y,
+          radius: 26,
+          velocityX: ball.velocityX,
+          velocityY: 1.2,
+        };
+      }
     };
 
     gameHub.registerOnServerEvents(callbacks);
@@ -674,13 +706,12 @@ const GameField: React.FC<MultiplePlayerModeProps> = () => {
       </div>
       {/* Game board */}
       <div
-        className={`gradient-border ${
-          gameEffect === "shake"
-            ? "shake-effect"
-            : gameEffect === "blackout"
+        className={`gradient-border ${gameEffect === "shake"
+          ? "shake-effect"
+          : gameEffect === "blackout"
             ? "blackout-effect"
             : ""
-        }`}
+          }`}
       >
         <canvas
           className="bg-base-300 mt-10 m-auto shadow-lg"

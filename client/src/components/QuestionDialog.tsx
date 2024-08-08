@@ -52,7 +52,7 @@ const QuestionDialogCmp: React.FC<QuestionDialogProps> = ({
 
     // if times is up we push a wrong question index
     timeoutRef.current = setTimeout(() => {
-      answeredQuestion(-1);
+      answeredQuestion(1000);
     }, gameDefaults.questionSeconds * 1000);
 
     return () => {

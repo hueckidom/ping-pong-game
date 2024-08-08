@@ -23,9 +23,9 @@ export type ball = GamePlayer & {
   velocityX: number; // shhifting by 2px
 };
 
-export interface HighScoreProps {}
+export interface HighScoreProps { }
 
-export interface HomeProps {}
+export interface HomeProps { }
 export interface AudioComponentProps {
   onAudioEnd: () => void;
   path: string;
@@ -111,6 +111,10 @@ export interface PlayerScoreAndLife {
 
 export interface QuestionItem {
   questionId: string;
+}
+
+export interface AnswerQuestionItem {
+  questionIndex: number;
 }
 
 export interface BallPosition {
