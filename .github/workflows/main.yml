@@ -40,4 +40,20 @@ jobs:
             push: true
             tags: ghcr.io/${{ github.repository }}-client:${{ github.sha }}  
 
-
+  deploy:
+     name: Deploy app
+     needs: build_and_push_image
+     runs-on: ubuntu-latest
+     if: success()
+     steps:
+       - name: Checkout Code from repository
+         uses: actions/checkout@v2
+       - run: |
+           cd deployment/terraform
+           terraform init -backend-config "secret_key=$OBJECT_STORAGE_SECRET_KEY" -backend-config "access_key=$OBJECT_STORAGE_ACCESS_KEY"
+           terraform apply -auto-approve -var "service_account_token=$SERVICE_ACCOUNT_TOKEN" -var "object_storage_secret_key=$OBJECT_STORAGE_SECRET_KEY" -var "object_storage_access_key=$OBJECT_STORAGE_ACCESS_KEY""
+         env:
+           OBJECT_STORAGE_SECRET_KEY: ${{ secrets.OBJECT_STORAGE_SECRET_KEY }}
+           OBJECT_STORAGE_ACCESS_KEY: ${{ secrets.OBJECT_STORAGE_ACCESS_KEY }}
+           SERVICE_ACCOUNT_TOKEN: ${{ secrets.SERVICE_ACCOUNT_TOKEN }}
+         name: Deploy app
