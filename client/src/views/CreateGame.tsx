@@ -34,7 +34,7 @@ const CreateGame: React.FC<{
     }
 
     try {
-      setError(null)
+      setError(null);
       setLoading(true);
       await new Promise((resolve) => setTimeout(() => resolve(null), 500)); //little delay for animation purpose
       const response = await createSession(name);
@@ -54,7 +54,7 @@ const CreateGame: React.FC<{
       console.error("Error:", err);
       setError("Fehler beim erstellen des Spieles.");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
   };
 
@@ -89,7 +89,7 @@ const CreateGame: React.FC<{
 
       setTimeout(() => {
         setShowCopyMessage(false);
-      }, 2000)
+      }, 2000);
     }
   };
 
@@ -97,7 +97,7 @@ const CreateGame: React.FC<{
     await playSound(buttonClickSound);
     if (sessionId) {
       try {
-        clearInterval(playerPollIntervall)
+        clearInterval(playerPollIntervall);
         await startGame(sessionId);
         navigate(`/game/${sessionId}`);
       } catch (err) {
@@ -110,96 +110,129 @@ const CreateGame: React.FC<{
   // Componentn <CreateButton>
   const CreateButton = () => {
     if (isWaitingForPlayer) {
-      return <></>
+      return <></>;
     }
 
     if (isLoading) {
-      return <div className="text-md p-4" > Wird erstellt... <span className="loading loading-spinner text-info"></span> </div>
+      return (
+        <div className="text-md p-4">
+          {" "}
+          Wird erstellt...{" "}
+          <span className="loading loading-spinner text-info"></span>{" "}
+        </div>
+      );
     }
 
-    return <button type="submit" className={`kave-btn ${name ? "" : "empty"}`} disabled={isLoading}>
-      <span className="kave-line"></span>
-      Erstellen
-    </button>
-  }
+    return (
+      <button
+        type="submit"
+        className={`kave-btn ${name ? "" : "empty"}`}
+        disabled={isLoading}
+      >
+        <span className="kave-line"></span>
+        Erstellen
+      </button>
+    );
+  };
 
   // Component NameInput
   const NameInput = () => {
     if (isWaitingForPlayer) {
-      return <span>Dein Name : <b> {name}</b></span>
+      return (
+        <span>
+          Dein Name : <b> {name}</b>
+        </span>
+      );
     }
 
-    return <input
-      type="text"
-      value={name}
-      autoFocus={true}
-      onChange={(e) => {
-        setName(e.target.value);
-        setEmptyError(null);
-      }}
-      placeholder="DEIN NAME"
-      className="input-kave-btn"
-      required
-    />
-  }
+    return (
+      <input
+        type="text"
+        value={name}
+        autoFocus={true}
+        onChange={(e) => {
+          setName(e.target.value);
+          setEmptyError(null);
+        }}
+        placeholder="DEIN NAME"
+        className="input-kave-btn"
+        required
+      />
+    );
+  };
 
   // Component GameLobbyPanel, if more than 1 players joined and we are rdy
   const GameLobbyPanel = () => {
-    return <>
-      {players.map((value, index) => {
-        if (index == 0) return <span className="text-yellow-200 font-bold">Spieler 1(du) : {value.name}</span>
-        if (index == 1) return <span className="text-blue-500 font-bold">Spieler 2 : {value.name}</span>
+    return (
+      <>
+        {players.map((value, index) => {
+          if (index == 0)
+            return (
+              <span className="text-yellow-200 font-bold">
+                Spieler 1(du) : {value.name}
+              </span>
+            );
+          if (index == 1)
+            return (
+              <span className="text-blue-500 font-bold">
+                Spieler 2 : {value.name}
+              </span>
+            );
 
-        return <span>Zuschauer : {value.name}</span>
-      })}
-    </>
-  }
+          return <span>Zuschauer : {value.name}</span>;
+        })}
+      </>
+    );
+  };
 
   const CreateGamePanel = () => {
     if (players.length > 1) {
-      return <GameLobbyPanel />
+      return <GameLobbyPanel />;
     }
 
-    return <form
-      onSubmit={handleSubmit}
-      className="flex flex-col items-center gap-4"
-    >
-      <NameInput />
-      <CreateButton />
+    return (
+      <form
+        onSubmit={handleSubmit}
+        className="flex flex-col items-center gap-4"
+      >
+        <NameInput />
+        <CreateButton />
 
-      {emptyError && <p className="mt-4 text-red-500">{emptyError}</p>}
-      {error && <p className="mt-4 text-red-500">{error}</p>}
+        {emptyError && <p className="mt-4 text-red-500">{emptyError}</p>}
+        {error && <p className="mt-4 text-red-500">{error}</p>}
 
-      {showInviteMessage && (
-        <div className="hero-content text-left flex-col bg-base-300 p-4 rounded-lg">
-          <p>Leite den Einladungslink an deinen Mitspieler weiter 😊</p>
-        </div>
-      )}
-      {link && (
-        <div className="relative">
-          <span className="text-xs">{link}</span>
-          <button
-            type="button"
-            onClick={copyToClipboard}
-            className="btn btn-neutral btn-sm ml-2">
-            Kopieren
-          </button>
-          {showCopyMessage && (
-            <div className="hero-content text-right flex-col bg-base-300 p-2 animate-bounce opacity-80 rounded-lg text-xs text-green-300 absolute w-full">
-              <p>Link in zwischenablage kopiert</p>
-            </div>
-          )}
-        </div>
-      )}
+        {showInviteMessage && (
+          <div className="hero-content text-left flex-col bg-base-300 p-4 rounded-lg">
+            <p>Leite den Einladungslink an deinen Mitspieler weiter 😊</p>
+          </div>
+        )}
+        {link && (
+          <div className="relative">
+            <span className="text-xs">{link}</span>
+            <button
+              type="button"
+              onClick={copyToClipboard}
+              className="btn btn-neutral btn-sm ml-2"
+            >
+              Kopieren
+            </button>
+            {showCopyMessage && (
+              <div className="hero-content text-right flex-col bg-base-300 p-2 animate-bounce opacity-80 rounded-lg text-xs text-green-300 absolute w-full">
+                <p>Link in zwischenablage kopiert</p>
+              </div>
+            )}
+          </div>
+        )}
 
-      {isWaitingForPlayer && (
-        <div className="mt-4 text-white flex gap-2 justify-center items-center bg-base-300 p-4">
-          <p>Warte auf weiteren Spieler</p>
-          <span className="loading loading-ring loading-md"></span>
-        </div>
-      )}
-    </form>
-  }
+        {isWaitingForPlayer && (
+          <div className="mt-4 text-white flex gap-2 justify-center items-center bg-base-300 p-4">
+            <p>Warte auf weiteren Spieler</p>
+            <span className="loading loading-ring loading-md"></span>
+          </div>
+        )}
+      </form>
+    );
+  };
 
   return (
     <>
@@ -225,12 +258,10 @@ const CreateGame: React.FC<{
               Starte Spiel
             </button>
           )}
-
-
-        </div >
-      </div >
+        </div>
+      </div>
       <AudioComponent
-        onAudioEnd={() => { }}
+        onAudioEnd={() => {}}
         path={backgroundMusic}
         volume={0.005}
       />

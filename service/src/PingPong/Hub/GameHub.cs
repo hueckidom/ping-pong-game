@@ -53,8 +53,15 @@ namespace PingPong.Hubs
         {
             string groupName = sessionId.ToString();
             Guid.Parse(currentQuestionId.QuestionId.ToString());
-            await Clients.Group(groupName).SendAsync("Received" + currentQuestionId.QuestionId);
+            await Clients.Group(groupName).SendAsync("ReceivedCurrentQuestion", currentQuestionId.QuestionId);
         }
+
+        public async Task DetectAnswerQuestion (Guid sessionId, QuestionItem item)
+        {
+            string groupName = sessionId.ToString();
+            await Clients.Group(groupName).SendAsync("ReceivedAnsweredQuestion", item.Questionindex);
+        }
+
 
         public async Task DetectBallMovement(Guid sessionId, BallPosition ballPosition)
         {
