@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
-import { gameSession, gameState } from "./Game";
+import { useNavigate } from "react-router-dom";
 import { addScores, getScores } from "../api/api";
+import { gameState } from "../utils/game-state";
 
 const state = {
   teamname: "",
@@ -10,8 +10,8 @@ const state = {
 };
 
 const EnterScore: React.FC = () => {
-  const [teamName] = useState(gameState.teamName);
-  const [score] = useState<number>(gameState.score);
+  const [teamName] = useState(gameState().teamName);
+  const [score] = useState(gameState().score!);
   const [isScoreAtTopTen, setIsScoreAtTopTen] = useState(false);
   const isFetching = useRef<boolean>(false);
   const [isLoading, setLoading] = useState<boolean>(true);
@@ -27,7 +27,7 @@ const EnterScore: React.FC = () => {
       return;
     }
 
-    if (gameState.teamName == "") {
+    if (gameState().teamName == "") {
       window.location.href = "/";
       return;
     }
@@ -36,11 +36,11 @@ const EnterScore: React.FC = () => {
     const currentScores = await getScores();
 
     if (currentScores.length < 10 ||
-      currentScores[currentScores.length - 1].score < gameState.score) {
+      currentScores[currentScores.length - 1].score < gameState().score!) {
       setIsScoreAtTopTen(true);
       state.isTop10 = true;
-      if (gameState.isHost && gameSession.players?.length) {
-        addScores(gameSession.sessionId, gameSession.players[0].id, gameState.teamName, gameState.score);
+      if (gameState().isHost && gameState()!.players!.length) {
+        addScores(gameState().sessionId!, gameState().players![0].id, gameState().teamName!, gameState().score!);
       }
     }
     setLoading(false);
