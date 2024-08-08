@@ -1,12 +1,11 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
-import { Score, gamepad } from "../utils/types";
-import { addGamePadListener, removeGamePadListener } from "../utils/gamepad";
+import { PlayerSessionData } from "../utils/types";
+import { getScores } from "../api/api";
 
 let canGoBack = false;
 const ShowScores: React.FC = () => {
-  const [highscores, setHighscores] = useState<Score[]>([]);
+  const [highscores, setHighscores] = useState<PlayerSessionData[]>([]);
   const navigate = useNavigate();
 
   const handleKeyPress = (event: KeyboardEvent) => {
@@ -21,12 +20,11 @@ const ShowScores: React.FC = () => {
   useEffect(() => {
     const fetchScores = async () => {
       try {
-        const response = await axios.get("https://localhost:7144/Score");
-        const scores = response.data;
+        const scores = await getScores();
 
         // Sortieren nach Score und Filtern der Top 10
         const sortedScores = scores
-          .sort((a: Score, b: Score) => b.score - a.score)
+          .sort((a, b) => b.score - a.score)
           .slice(0, 10);
         setHighscores(sortedScores);
       } catch (error) {
@@ -39,31 +37,21 @@ const ShowScores: React.FC = () => {
     canGoBack = false;
     window.addEventListener("keydown", handleKeyPress);
 
-    const gamePadHandler = (input: gamepad) => {
-      if (input.type === "button" && input.pressed && canGoBack) {
-        setTimeout(() => {
-          navigate("/");
-        }, 200);
-        return;
-      }
-    };
-    const padIndex = addGamePadListener(gamePadHandler);
-
     setTimeout(() => {
       canGoBack = true;
     }, 200);
 
     return () => {
       window.removeEventListener("keydown", handleKeyPress);
-      removeGamePadListener(gamePadHandler, padIndex);
     };
   }, [navigate]);
 
   return (
     <div className="hero min-h-screen bg-base-200">
+      <button className="kbd fixed left-2 top-2 hover:opacity-60 text-lg" onClick={() => navigate("/")}>◀︎ Zurück</button>
       <div className="hero-content text-left flex-col bg-base-300 p-4 rounded-lg min-w-96">
         <div className="title-wrapper mb-12 floating">
-          <h1 className="sweet-title">
+          <h1 className="sweet-title sweet-title-mixed">
             <span data-text="Bestenliste">Bestenliste</span>
           </h1>
         </div>

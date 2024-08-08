@@ -52,6 +52,17 @@ const INITIAL_GAME_DEFAULTS: BaseSettings = {
   pushInterval: 160,
 };
 
+const INITAL_GAME_STATES = {
+  teamName: "",
+  timer: 0,
+  score: 0,
+  life: INITIAL_GAME_DEFAULTS.maxLife,
+  isHost: false,
+  isPaused: false,
+  question: undefined,
+  isSpawningBubble: false
+};
+
 export let gameDefaults: BaseSettings = { ...INITIAL_GAME_DEFAULTS };
 export let gameHub = new GameHubClient();
 
@@ -60,19 +71,11 @@ export const assignGameDefaults = (settings: BaseSettings) => {
 };
 
 let animationFrame: number | null = null;
-let gameSession: GameSession;
+export let gameSession: GameSession;
 let sessionState: SessionStorage; // stored in the session storeage
 
 // simple state management
-const gameState = {
-  timer: 0,
-  score: 0,
-  life: gameDefaults.maxLife,
-  isHost: false,
-  isPaused: false,
-  question: undefined,
-  isSpawningBubble: false
-};
+export let gameState = INITAL_GAME_STATES;
 
 const GameField: React.FC<MultiplePlayerModeProps> = () => {
   const boardWidth = determineBoardWidth();
@@ -145,14 +148,16 @@ const GameField: React.FC<MultiplePlayerModeProps> = () => {
   }, []);
 
   useEffect(() => {
-    if (!gameState.isHost) return;
 
     gameState.score = score;
     gameState.life = life;
-    gameHub.pushPlayerScoreAndLife(gameSession.sessionId, {
-      life,
-      score,
-    });
+
+    if (gameState.isHost) {
+      gameHub.pushPlayerScoreAndLife(gameSession.sessionId, {
+        life,
+        score,
+      });
+    }
   }, [score, life]);
 
 
@@ -179,9 +184,9 @@ const GameField: React.FC<MultiplePlayerModeProps> = () => {
   }, [gameStared]);
 
   useEffect(() => {
-    // if (life <= 0) {
-    //   window.location.href = `/#/enter-score?score=${scoreRef.current}`;
-    // }
+    if (life <= 0) {
+      window.location.href = `/#/enter-score`;
+    }
   }, [life]);
 
   useEffect(() => {
@@ -260,9 +265,9 @@ const GameField: React.FC<MultiplePlayerModeProps> = () => {
   };
 
   const resetGameState = () => {
-    gameState.life = gameDefaults.maxLife;
-    gameState.score = 0;
-    gameState.timer = 0;
+    gameState = {
+      ...INITAL_GAME_STATES
+    }
   };
 
   const triggerPause = () => {
@@ -589,6 +594,10 @@ const GameField: React.FC<MultiplePlayerModeProps> = () => {
       gameSession = await getSessionById(gameSessionId());
       sessionState = getSessionState();
 
+      if (gameSession.players && gameSession.players.length > 1) {
+        gameState.teamName = gameSession.players[0].name! + " & " + gameSession.players[1].name!;
+      }
+
       if (
         gameSession?.players?.length &&
         gameSession?.players[0].id === sessionState.id
@@ -632,7 +641,7 @@ const GameField: React.FC<MultiplePlayerModeProps> = () => {
         if (!gameState.isHost && bubbleRef.current) {
           bubbleRef.current.x = x;
           bubbleRef.current.y = y;
-        } 
+        }
       },
       receivedCurrentQuestion: (questionId: string) => {
         if (!gameState.isHost) {

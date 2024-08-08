@@ -53,7 +53,7 @@ export interface SettingProps {
 }
 
 export interface Score {
-  name: string;
+  name?: string;
   score: number;
 }
 
