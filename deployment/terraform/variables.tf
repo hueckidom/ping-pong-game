@@ -26,3 +26,7 @@ variable "ping_pong_game_github_repo_url" {
   description = "Github repository URL of an application"
   default = "https://github.com/hueckidom/ping-pong-game"
 }
+
+variable "image_tag" {
+  description = "Image tag of service and client"
+}
