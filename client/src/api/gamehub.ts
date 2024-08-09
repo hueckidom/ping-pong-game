@@ -1,6 +1,7 @@
 import * as signalR from "@microsoft/signalr";
 import { apiUrl } from "../utils/config";
 import {
+  AnswerQuestionItem,
   BallPosition,
   BallSize,
   PlayerPosition,
@@ -38,6 +39,7 @@ export class GameHubClient {
     receiveBallMovement: (x: number, y: number) => void;
     receivedAnsweredQuestion: (questionindex: number) => void;
     receiveQuestionBallMovement: (x: number, y: number) => void;
+    receivedDetectSpawnQuestionBall: (x: number, y: number) => void;
     receiveBallSize: (width: number, height: number) => void;
   }): void {
     this.connection.on("ReceiveMessage", callbacks.receiveMessage);
@@ -49,6 +51,10 @@ export class GameHubClient {
     this.connection.on(
       "ReceivedCurrentQuestion",
       callbacks.receivedCurrentQuestion
+    );
+    this.connection.on(
+      "ReceivedDetectSpawnQuestionBall",
+      callbacks.receivedDetectSpawnQuestionBall
     );
     this.connection.on("ReceivedBallMovement", callbacks.receiveBallMovement);
     this.connection.on(
@@ -97,7 +103,7 @@ export class GameHubClient {
     await this.connection.invoke("DetectPlayerSize", sessionId, playerSize);
   }
 
-  public async detectPlayerScoreAndLife(
+  public async pushPlayerScoreAndLife(
     sessionId: string,
     scoreAndLife: PlayerScoreAndLife
   ): Promise<void> {
@@ -110,12 +116,12 @@ export class GameHubClient {
 
   public async pushCurrentQuestion(
     sessionId: string,
-    currentQuestionId: QuestionItem
+    item: QuestionItem
   ): Promise<void> {
     await this.connection.invoke(
       "DetectCurrentQuestion",
       sessionId,
-      currentQuestionId
+      item
     );
   }
 
@@ -126,7 +132,7 @@ export class GameHubClient {
     await this.connection.invoke("DetectBallMovement", sessionId, ballPosition);
   }
 
-  public async detectQuestionBallMovement(
+  public async pushQuestionBallMovement(
     sessionId: string,
     ballPosition: BallPosition
   ): Promise<void> {
@@ -146,12 +152,23 @@ export class GameHubClient {
 
   public async pushAnsweredQuestion(
     sessionId: string,
-    questionindex: number
+    item: AnswerQuestionItem
   ): Promise<void> {
     await this.connection.invoke(
       "DetectAnswerQuestion",
       sessionId,
-      questionindex
+      item
+    );
+  }
+
+  public async pushSpawnQuestionBall(
+    sessionId: string,
+    ballPosition: BallPosition
+  ): Promise<void> {
+    await this.connection.invoke(
+      "DetectSpawnQuestionBall",
+      sessionId,
+      ballPosition
     );
   }
 }

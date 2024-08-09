@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { getSessionById, joinRoom } from "../api/api";
-import { setSessionState } from "../utils/session-state";
+import { updateGameState } from "../utils/game-state";
 
 const JoinGame: React.FC = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
@@ -39,8 +39,13 @@ const JoinGame: React.FC = () => {
         const isGameStarted = response.isSessionRunning;
 
         if (response.players?.length && response.players.length > 1) {
-          const player2 = response.players[1];
-          setSessionState(playerName, player2.id, response.sessionId, false);
+          const palyer2 = response.players[1];
+          updateGameState({
+            name: playerName,
+            id: palyer2.id,
+            sessionId: response.sessionId,
+            isHost: false,
+          });
         }
 
         if (isGameStarted) {

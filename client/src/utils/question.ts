@@ -32,7 +32,7 @@ const indexToAlpha = (index: number): string => {
     case 3:
       return "D";
     default:
-      return "";
+      return "FAIL";
   }
 };
 

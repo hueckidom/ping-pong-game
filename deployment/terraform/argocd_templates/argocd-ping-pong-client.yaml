@@ -13,7 +13,7 @@ spec:
     automated: {}
   source:
     repoURL: "${github_repo_url}"
-    targetRevision: main
+    targetRevision: master
     path: ${helm_chart_path}
     helm:
       valueFiles:
