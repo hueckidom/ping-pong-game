@@ -1,10 +1,9 @@
-apiVersion: extensions/v1beta1
+apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: client-ingress
   annotations:
     nginx.ingress.kubernetes.io/rewrite-target: /
-    ingressclass.kubernetes.io/is-default-class: true
 spec:
   rules:
   - host: valuehero-pingpong.com
@@ -15,4 +14,5 @@ spec:
         backend:
           service:
             name: ping-pong-client-service
-            servicePort: 8080
+            port: 
+              number: 8080
