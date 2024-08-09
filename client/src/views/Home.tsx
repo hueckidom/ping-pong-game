@@ -15,7 +15,6 @@ import {
   removeGamePadListener,
 } from "../utils/gamepad";
 import { playSound } from "../utils/board";
-import { GameHubClient } from "../api/gamehub";
 
 const state: any = {
   activeIndex: 0,
@@ -23,22 +22,13 @@ const state: any = {
 };
 const Home: React.FC<HomeProps> = ({ }) => {
   const [activeIndex, setActiveIndex] = useState(0);
-  const [gameMode, setGameMode] = useState(
-    localStorage.getItem("gameMode")
-      ? parseInt(localStorage.getItem("gameMode") || "0")
-      : 0
-  );
+  const [gameMode, setGameMode] = useState(1);
   const navigate = useNavigate();
 
   const goToGame = async () => {
     await playSound(buttonClickSound);
     navigate("/create-game");
   };
-  const joinGame = async () => {
-    await playSound(buttonClickSound);
-    navigate("/enter-session");
-  };
-
   const goToHighscore = async () => {
     await playSound(buttonClickSound);
     navigate("/scores");
@@ -154,15 +144,8 @@ const Home: React.FC<HomeProps> = ({ }) => {
                 onClick={goToGame}
               >
                 <span className="kave-line"></span>
-                SPIEL ERSTELLEN!
+                SPIEL ERSTELLEN
               </button>
-              {/* <button
-                className={(activeIndex === 1 ? 'active' : '') + ' kave-btn'}
-                onClick={joinGame}
-              >
-                <span className="kave-line"></span>
-                SPIEL BEITRTEN!
-              </button> */}
               <button
                 className={(activeIndex === 1 ? "active" : "") + " kave-btn"}
                 onClick={goToHighscore}

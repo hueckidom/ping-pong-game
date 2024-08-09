@@ -139,9 +139,7 @@ const CreateGame: React.FC<{
   const NameInput = () => {
     if (isWaitingForPlayer) {
       return (
-        <span>
-          Dein Name : <b> {name}</b>
-        </span>
+        <></>
       );
     }
 
