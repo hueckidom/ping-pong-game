@@ -81,10 +81,15 @@ autoscaling:
   # targetMemoryUtilizationPercentage: 80
 
 # Additional volumes on the output Deployment definition.
-volumes: []
+volumes:
+  - name: sqlite-pv-claim
+    persistentVolumeClaim:
+      claimName: psqlite-pv-claim
 
 # Additional volumeMounts on the output Deployment definition.
-volumeMounts: []
+volumeMounts:
+  - mountPath: /db/sqlite
+    name: sqlite-pv-claim
 
 nodeSelector: {}
 
