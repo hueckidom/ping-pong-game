@@ -7,7 +7,8 @@ const JoinGame: React.FC = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
   const [playerName, setPlayerName] = useState("");
   const [emptyError, setEmptyError] = useState<string | null>(null);
-
+  const [showInviteMessage, setShowInviteMessage] = useState<boolean>(false);
+  const [isWaitingForPlayer, setIsWaitingForPlayer] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [joined, setJoined] = useState<boolean>(false);
@@ -17,9 +18,10 @@ const JoinGame: React.FC = () => {
     e.preventDefault();
     if (playerName && sessionId) {
       try {
-        await joinRoom(sessionId, playerName)
-        setJoined(true); // Set player as joined
-        setLoading(true); // Start showing loading indicator for game start
+        await joinRoom(sessionId, playerName);
+        setJoined(true);
+        setLoading(true);
+        setIsWaitingForPlayer(true);
 
         // Start polling to check if the game has started
         pollForGameStart(sessionId);
@@ -36,10 +38,9 @@ const JoinGame: React.FC = () => {
         const response = await getSessionById(sessionId);
         const isGameStarted = response.isSessionRunning;
 
-        // todo for zuschauer
         if (response.players?.length && response.players.length > 1) {
-          const palyer2 = response.players[1];
-          setSessionState(playerName, palyer2.id, response.sessionId, false)
+          const player2 = response.players[1];
+          setSessionState(playerName, player2.id, response.sessionId, false);
         }
 
         if (isGameStarted) {
@@ -65,41 +66,47 @@ const JoinGame: React.FC = () => {
               <span data-text="Beitreten">Beitreten</span>
             </h1>
           </div>
-          <form onSubmit={handleSubmit}>
-            <label className="block mb-4">
-              <input
-                type="text"
-                autoFocus={true}
-                value={playerName}
-                onChange={(e) => setPlayerName(e.target.value)}
-                placeholder="DEIN NAME"
-                className={`input-kave-btn `}
-                required
-              />
-            </label>
-            <button
-              type="submit"
-              className={`kave-btn ${playerName ? "" : "empty"}`}
-            >
-              <span className="kave-line"></span>
-              Beitreten
-            </button>
-            {emptyError && <p className="mt-4 text-red-500">{emptyError}</p>}
-            {error && <p className="mt-4 text-red-500">{error}</p>}{" "}
-          </form>
-          {joined && (
-            <p className="mt-4 text-green-500">
-              You have successfully joined the game. Waiting for the game to
-              start...
-            </p>
+
+          {!joined && (
+            <form onSubmit={handleSubmit}>
+              <label className="block mb-4">
+                <input
+                  type="text"
+                  autoFocus={true}
+                  value={playerName}
+                  onChange={(e) => setPlayerName(e.target.value)}
+                  placeholder="DEIN NAME"
+                  className={`input-kave-btn `}
+                  required
+                />
+              </label>
+              <button
+                type="submit"
+                className={`kave-btn ${playerName ? "" : "empty"}`}
+              >
+                <span className="kave-line"></span>
+                Beitreten
+              </button>
+
+              {emptyError && <p className="mt-4 text-red-500">{emptyError}</p>}
+              {error && <p className="mt-4 text-red-500">{error}</p>}
+            </form>
           )}
+
+          {joined && (
+            <div className="mt-4">
+              {isWaitingForPlayer && (
+                <span>
+                  Dein Name: <b>{playerName}</b>
+                </span>
+              )}
+            </div>
+          )}
+
           {loading && (
-            <div className="mt-4 text-black">
-              <p>Waiting for the game to start...</p>
-              <div className="w-full h-2 bg-gray-200 rounded">
-                <div className="w-1/2 h-full bg-blue-500 rounded animate-pulse"></div>{" "}
-                {/* Ladebalken */}
-              </div>
+            <div className="mt-4 text-white flex gap-2 justify-center items-center bg-base-300 p-4">
+              <p>Warte auf weiteren Spieler</p>
+              <span className="loading loading-ring loading-md"></span>
             </div>
           )}
         </div>
