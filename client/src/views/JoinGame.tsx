@@ -2,16 +2,17 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { getSessionById, joinRoom } from "../api/api";
 import { updateGameState } from "../utils/game-state";
+import { PlayerSessionData } from "../utils/types";
 
 const JoinGame: React.FC = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
   const [playerName, setPlayerName] = useState("");
   const [emptyError, setEmptyError] = useState<string | null>(null);
-  const [showInviteMessage, setShowInviteMessage] = useState<boolean>(false);
-  const [isWaitingForPlayer, setIsWaitingForPlayer] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [joined, setJoined] = useState<boolean>(false);
+  const [players, setPlayers] = useState<PlayerSessionData[]>([]);
+
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -21,7 +22,6 @@ const JoinGame: React.FC = () => {
         await joinRoom(sessionId, playerName);
         setJoined(true);
         setLoading(true);
-        setIsWaitingForPlayer(true);
 
         // Start polling to check if the game has started
         pollForGameStart(sessionId);
@@ -32,31 +32,58 @@ const JoinGame: React.FC = () => {
     }
   };
 
-  const pollForGameStart = (sessionId: string) => {
-    const intervalId = setInterval(async () => {
-      try {
-        const response = await getSessionById(sessionId);
-        const isGameStarted = response.isSessionRunning;
+  const pollForGameStart = async (sessionId: string) => {
+    try {
+      const response = await getSessionById(sessionId);
+      const isGameStarted = response.isSessionRunning;
 
-        if (response.players?.length && response.players.length > 1) {
-          const palyer2 = response.players[1];
-          updateGameState({
-            name: playerName,
-            id: palyer2.id,
-            sessionId: response.sessionId,
-            isHost: false,
-          });
-        }
-
-        if (isGameStarted) {
-          clearInterval(intervalId);
-          setLoading(false);
-          navigate(`/game/${sessionId}`);
-        }
-      } catch (err) {
-        console.error("Error while polling for game start:", err);
+      if (response.players?.length && response.players.length > 1) {
+        const palyer2 = response.players[1];
+        updateGameState({
+          name: playerName,
+          id: palyer2.id,
+          sessionId: response.sessionId,
+          isHost: false,
+          players: response.players
+        });
+        setPlayers(response.players!);
       }
-    }, 2000); // Poll every 2 seconds
+
+      if (isGameStarted) {
+        setLoading(false);
+        navigate(`/game/${sessionId}`);
+        return;
+      }
+
+      await new Promise((resolve) => setTimeout(() => resolve(null), 1000));
+      await pollForGameStart(sessionId);
+    } catch (err) {
+      console.error("Error while polling for game start:", err);
+    }
+  };
+
+  // Component GameLobbyPanel, if more than 1 players joined and we are rdy
+  const GameLobbyPanel = () => {
+    return (
+      <>
+        {players.map((value, index) => {
+          if (index == 0)
+            return (
+              <div className="text-yellow-200 font-bold mb-4">
+                Spieler 1 : {value.name}
+              </div>
+            );
+          if (index == 1)
+            return (
+              <div className="text-blue-500 font-bold mb-4">
+                Spieler 2 : {value.name}
+              </div>
+            );
+
+          return <div className="mb-4">Zuschauer : {value.name}</div>;
+        })}
+      </>
+    );
   };
 
   return (
@@ -98,19 +125,13 @@ const JoinGame: React.FC = () => {
             </form>
           )}
 
-          {joined && (
-            <div className="mt-4">
-              {isWaitingForPlayer && (
-                <span>
-                  Dein Name: <b>{playerName}</b>
-                </span>
-              )}
-            </div>
+          {players.length > 1 && (
+            <GameLobbyPanel />
           )}
 
           {loading && (
             <div className="mt-4 text-white flex gap-2 justify-center items-center bg-base-300 p-4">
-              <p>Warte auf weiteren Spieler</p>
+              <p>Warte bist der Host das Spiel startet</p>
               <span className="loading loading-ring loading-md"></span>
             </div>
           )}
