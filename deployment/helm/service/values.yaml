@@ -84,7 +84,7 @@ autoscaling:
 volumes:
   - name: sqlite-pv-claim
     persistentVolumeClaim:
-      claimName: psqlite-pv-claim
+      claimName: sqlite-pv-claim
 
 # Additional volumeMounts on the output Deployment definition.
 volumeMounts:
