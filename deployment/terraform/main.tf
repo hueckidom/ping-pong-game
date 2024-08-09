@@ -67,12 +67,23 @@ resource "helm_release" "argocd" {
   skip_crds = true
 }
 
+resource "helm_release" "ingress-nginx" {
+  name = "ingress-nginx"
+  repository = "https://kubernetes.github.io/ingress-nginx"
+  chart = "ingress-nginx"
+  namespace = "ingress-nginx"
+  create_namespace = true
+  timeout = 300
+  skip_crds = true
+}
+
 resource "kubectl_manifest" "argocd-ping-pong-service" {
   depends_on = [helm_release.argocd, stackit_ske_cluster.ske]
   yaml_body = templatefile("${path.module}/argocd_templates/argocd-ping-pong-service.yaml", {
     github_repo_url = var.ping_pong_game_github_repo_url
     helm_chart_path = "deployment/helm/service"
     resource_name = "ping-pong-service"
+    image_tag = var.image_tag
   })
 }
 
@@ -82,5 +93,6 @@ resource "kubectl_manifest" "argocd-ping-pong-client" {
     github_repo_url = var.ping_pong_game_github_repo_url
     helm_chart_path = "deployment/helm/client"
     resource_name = "ping-pong-client"
+    image_tag = var.image_tag
   })
 }

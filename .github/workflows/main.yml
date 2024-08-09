@@ -51,7 +51,7 @@ jobs:
        - run: |
            cd deployment/terraform
            terraform init -backend-config "secret_key=$OBJECT_STORAGE_SECRET_KEY" -backend-config "access_key=$OBJECT_STORAGE_ACCESS_KEY"
-           terraform apply -auto-approve -var "service_account_token=$SERVICE_ACCOUNT_TOKEN" -var "object_storage_secret_key=$OBJECT_STORAGE_SECRET_KEY" -var "object_storage_access_key=$OBJECT_STORAGE_ACCESS_KEY"
+           terraform apply -auto-approve -var "service_account_token=$SERVICE_ACCOUNT_TOKEN" -var "object_storage_secret_key=$OBJECT_STORAGE_SECRET_KEY" -var "object_storage_access_key=$OBJECT_STORAGE_ACCESS_KEY" -var "image_tag=${{ github.sha }}
          env:
            OBJECT_STORAGE_SECRET_KEY: ${{ secrets.OBJECT_STORAGE_SECRET_KEY }}
            OBJECT_STORAGE_ACCESS_KEY: ${{ secrets.OBJECT_STORAGE_ACCESS_KEY }}

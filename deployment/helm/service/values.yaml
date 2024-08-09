@@ -9,7 +9,7 @@ image:
   repository: hueckidom/ping-pong-game-service
   pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
-  tag: "2d01a2593911d05193803e15c6016e66c754ce5b"
+  tag: ""
 
 imagePullSecrets: []
 nameOverride: ""
