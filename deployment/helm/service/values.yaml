@@ -88,7 +88,7 @@ volumes:
 
 # Additional volumeMounts on the output Deployment definition.
 volumeMounts:
-  - mountPath: /db/sqlite
+  - mountPath: /var/lib/sqlite/
     name: sqlite-pv-claim
 
 nodeSelector: {}
