@@ -7,7 +7,6 @@ import ShowScores from './views/ShowScores';
 import Settings from './views/Settings';
 import CreateGame from './views/CreateGame';
 import JoinGame from './views/JoinGame';
-import EnterSessionId from './views/EnterSessionId';
 
 const App = () => {
     const [settings, setSettings] = useState({
@@ -30,7 +29,6 @@ const App = () => {
                 <Route path="/settings" element={<Settings />} />
                 <Route path="/create-game" element={<CreateGame onSubmit={handleCreateGameSubmit} />} /> {/* Stelle sicher, dass onSubmit übergeben wird */}
                 <Route path="/join/:sessionId" element={<JoinGame />} />
-                <Route path="/enter-session" element={<EnterSessionId />} />
             </Routes>
         </Router>
     );

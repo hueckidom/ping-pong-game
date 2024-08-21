@@ -6,14 +6,6 @@ import backgroundMusic from "../assets/game.mp3";
 import valuehero from "../assets/valuehero.png";
 import valuehero2 from "../assets/valuehero2.png";
 import AudioComponent from "../components/Audio";
-import {
-  addGamePadListener,
-  isDownPressed,
-  isLeftPressed,
-  isRightPressed,
-  isUpPressed,
-  removeGamePadListener,
-} from "../utils/gamepad";
 import { playSound } from "../utils/board";
 
 const state: any = {
@@ -82,37 +74,9 @@ const Home: React.FC<HomeProps> = ({ }) => {
 
     window.addEventListener("keydown", handleKeyPress);
 
-    const handleGamepad = (input: gamepad) => {
-      if (input.type === "button" && input.pressed) {
-        handlePress();
-        return;
-      }
 
-      if (isDownPressed(input)) {
-        const newIndex = state.activeIndex > 0 ? state.activeIndex - 1 : 0;
-        setActiveIndex(newIndex);
-      }
-
-      if (isUpPressed(input)) {
-        const newIndexD = state.activeIndex < 1 ? state.activeIndex + 1 : 1;
-        setActiveIndex(newIndexD);
-      }
-
-      if (isRightPressed(input)) {
-        const newIndexR = state.gameMode == 0 ? state.gameMode + 1 : 0;
-        setGameMode(newIndexR);
-      }
-
-      if (isLeftPressed(input)) {
-        const newIndexR = state.gameMode == 1 ? state.gameMode - 1 : 0;
-        setGameMode(newIndexR);
-      }
-    };
-
-    const padIndex = addGamePadListener(handleGamepad);
     return () => {
       window.removeEventListener("keydown", handleKeyPress);
-      removeGamePadListener(handleGamepad, padIndex);
     };
   }, []);
 
