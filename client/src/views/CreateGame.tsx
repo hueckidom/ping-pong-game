@@ -9,9 +9,7 @@ import { PlayerSessionData } from "../utils/types";
 import { updateGameState } from "../utils/game-state";
 
 let playerPollIntervall: any;
-const CreateGame: React.FC<{
-  onSubmit: (name: string, sessionId: string) => void;
-}> = ({ onSubmit }) => {
+const CreateGame: React.FC<any> = () => {
   const [name, setName] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [emptyError, setEmptyError] = useState<string | null>(null);
@@ -41,7 +39,6 @@ const CreateGame: React.FC<{
       const sessionId = response.sessionId;
       if (sessionId) {
         setSessionId(sessionId);
-        onSubmit(name, sessionId);
         const joinLink = `${window.location.origin}/#/join/${sessionId}`;
         setLink(joinLink);
         setIsWaitingForPlayer(true);
@@ -67,8 +64,6 @@ const CreateGame: React.FC<{
         const me = players[0];
         updateGameState({ name: me.name ?? "random1", id: me.id, sessionId, isHost: true });
 
-        console.log("Number of players:", players.length);
-
         if (players.length > 1) {
           setIsWaitingForPlayer(false);
           setPlayers(players);
@@ -82,16 +77,35 @@ const CreateGame: React.FC<{
   const copyToClipboard = async () => {
     await playSound(buttonClickSound);
     if (link) {
-      navigator.clipboard
-        .writeText(link)
-        .catch((err) => console.error("Failed to copy: ", err));
+      if (navigator.clipboard && window.isSecureContext) {
+        // Use Clipboard API if available and secure context
+        try {
+          await navigator.clipboard.writeText(link);
+        } catch (err) {
+          console.error("Failed to copy: ", err);
+        }
+      } else {
+        // Fallback for insecure context or older browsers
+        const textArea = document.createElement("textarea");
+        textArea.value = link;
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        try {
+          document.execCommand('copy');
+          console.log("Text copied successfully.");
+        } catch (err) {
+          console.error("Fallback: Failed to copy: ", err);
+        }
+        document.body.removeChild(textArea);
+      }
       setShowCopyMessage(true);
-
       setTimeout(() => {
         setShowCopyMessage(false);
       }, 2000);
     }
   };
+
 
   const onStartGame = async () => {
     await playSound(buttonClickSound);
@@ -189,46 +203,49 @@ const CreateGame: React.FC<{
     }
 
     return (
-      <form
-        onSubmit={handleSubmit}
-        className="flex flex-col items-center gap-4"
-      >
-        <NameInput />
-        <CreateButton />
+      <>
+        <button className="kbd fixed left-2 top-2 hover:opacity-60 text-lg" onClick={() => navigate("/")}>◀︎ Zurück</button>
+        <form
+          onSubmit={handleSubmit}
+          className="flex flex-col items-center gap-4"
+        >
+          <NameInput />
+          <CreateButton />
 
-        {emptyError && <p className="mt-4 text-red-500">{emptyError}</p>}
-        {error && <p className="mt-4 text-red-500">{error}</p>}
+          {emptyError && <p className="mt-4 text-red-500">{emptyError}</p>}
+          {error && <p className="mt-4 text-red-500">{error}</p>}
 
-        {showInviteMessage && (
-          <div className="hero-content text-left flex-col bg-base-300 p-4 rounded-lg">
-            <p>Leite den Einladungslink an deinen Mitspieler weiter 😊</p>
-          </div>
-        )}
-        {link && (
-          <div className="relative">
-            <span className="text-xs">{link}</span>
-            <button
-              type="button"
-              onClick={copyToClipboard}
-              className="btn btn-neutral btn-sm ml-2"
-            >
-              Kopieren
-            </button>
-            {showCopyMessage && (
-              <div className="hero-content text-right flex-col bg-base-300 p-2 animate-bounce opacity-80 rounded-lg text-xs text-green-300 absolute w-full">
-                <p>Link in zwischenablage kopiert</p>
-              </div>
-            )}
-          </div>
-        )}
+          {showInviteMessage && (
+            <div className="hero-content text-left flex-col bg-base-300 p-4 rounded-lg">
+              <p>Leite den Einladungslink an deinen Mitspieler weiter 😊</p>
+            </div>
+          )}
+          {link && (
+            <div className="relative">
+              <span className="text-xs">{link}</span>
+              <button
+                type="button"
+                onClick={copyToClipboard}
+                className="btn btn-neutral btn-sm ml-2"
+              >
+                Kopieren
+              </button>
+              {showCopyMessage && (
+                <div className="hero-content text-right flex-col bg-base-300 p-2 animate-bounce opacity-80 rounded-lg text-xs text-green-300 absolute w-full">
+                  <p>Link in zwischenablage kopiert</p>
+                </div>
+              )}
+            </div>
+          )}
 
-        {isWaitingForPlayer && (
-          <div className="mt-4 text-white flex gap-2 justify-center items-center bg-base-300 p-4">
-            <p>Warte auf weiteren Spieler</p>
-            <span className="loading loading-ring loading-md"></span>
-          </div>
-        )}
-      </form>
+          {isWaitingForPlayer && (
+            <div className="mt-4 text-white flex gap-2 justify-center items-center bg-base-300 p-4">
+              <p>Warte auf weiteren Spieler</p>
+              <span className="loading loading-ring loading-md"></span>
+            </div>
+          )}
+        </form>
+      </>
     );
   };
 
