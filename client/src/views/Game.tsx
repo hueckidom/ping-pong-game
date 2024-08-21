@@ -175,9 +175,9 @@ const GameField: React.FC<any> = () => {
   }, [gameStared]);
 
   useEffect(() => {
-    // if (life <= 0) {
-    //   window.location.href = `/#/enter-score`;
-    // }
+    if (life <= 0) {
+      window.location.href = `/#/enter-score`;
+    }
   }, [life]);
 
   useEffect(() => {
@@ -411,8 +411,9 @@ const GameField: React.FC<any> = () => {
   };
 
   const handleGoal = () => {
-    setLife((prevLife) => prevLife - 1);
-    if (life > 0) {
+    const newLife = gameState().life! - 1;
+    setLife(newLife);
+    if (newLife > 0) {
       playSound(goalSound);
       resetBall();
     } else {
@@ -537,7 +538,9 @@ const GameField: React.FC<any> = () => {
   };
 
   const answeredQuestion = (questionIndex: number) => {
-    gameHub.pushAnsweredQuestion(gameState().sessionId!, { questionIndex });
+    if (gameState().isHost) {
+      gameHub.pushAnsweredQuestion(gameState().sessionId!, { questionIndex });
+    }
   };
 
   const handleAnswer = (isCorrect: boolean) => {
@@ -547,7 +550,7 @@ const GameField: React.FC<any> = () => {
       if (isCorrect) {
         setScore(gameState().score! + timer);
       } else {
-        setLife((prevLife) => prevLife - 1);
+        setLife(gameState().life! - 1);
       }
     }
 
