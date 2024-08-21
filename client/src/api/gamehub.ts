@@ -14,7 +14,7 @@ export class GameHubClient {
 
   constructor() {
     this.connection = new signalR.HubConnectionBuilder()
-      .withUrl(`${apiUrl}/hub`, {
+      .withUrl(`${apiUrl}hub`, {
         withCredentials: false, //  CORS policy
       })
       .configureLogging(signalR.LogLevel.Information)
