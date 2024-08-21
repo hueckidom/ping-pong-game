@@ -8,15 +8,13 @@ RUN npm install
 
 COPY . .
 
-ARG VITE_API_URL
-ENV VITE_API_URL=$VITE_API_URL
 RUN npm run build
 
 FROM nginx:alpine
 
 RUN rm /etc/nginx/conf.d/default.conf
 
-WORKDIR /app
+WORKDIR /usr/src/app
 
 COPY --from=builder /usr/src/app/dist /usr/share/nginx/html
 
