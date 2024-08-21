@@ -1,15 +1,9 @@
 import React, { useEffect, useState, useCallback, useRef } from "react";
-import { Question, QuestionDialogProps, gamepad } from "../utils/types";
+import { QuestionDialogProps } from "../utils/types";
 import { gameDefaults } from "../views/Game";
 import correctSound from "../assets/correct.mp3";
 import wrongSound from "../assets/wrong.mp3";
 import { playSound } from "../utils/board";
-
-const state: any = {
-  question: undefined,
-  activeIndex: 0,
-  isDone: false,
-};
 
 const QuestionDialogCmp: React.FC<QuestionDialogProps> = ({
   answeredQuestion,
@@ -21,6 +15,7 @@ const QuestionDialogCmp: React.FC<QuestionDialogProps> = ({
   const [isCorrect, setIsCorrect] = useState(false);
   const [timer, setTimer] = useState(gameDefaults.questionSeconds);
   let timeoutRef: any = useRef(null);
+  let timerInterval: any;
 
   useEffect(() => {
     if (isAnsweredQuestionCorrect == undefined) return;
@@ -39,18 +34,39 @@ const QuestionDialogCmp: React.FC<QuestionDialogProps> = ({
     answeredQuestion(activeIndex);
   }, [activeIndex, question]);
 
+  const handleClick = (index: number) => {
+    clearTimeout(timeoutRef.current);
+    setActiveIndex(index);
+    answeredQuestion(index);
+  };
+
   useEffect(() => {
     setIsWrong(false);
     setIsCorrect(false);
     setTimer(gameDefaults.questionSeconds);
 
-    // if times is up we push a wrong question index
+    // if time is up we push a wrong question index
     timeoutRef.current = setTimeout(() => {
       answeredQuestion(1000);
     }, gameDefaults.questionSeconds * 1000);
 
+    let timerState = timer;
+    timerInterval = setInterval(() => {
+
+      if(timerState === 0){
+        clearInterval(timerInterval);
+        return;
+      }
+
+      timerState -= 1;
+      setTimer(timerState)
+    }, 1000);
+
     return () => {
       clearTimeout(timeoutRef.current);
+      if (timerInterval) {
+        clearInterval(timerInterval);
+      }
     };
   }, []);
 
@@ -76,7 +92,6 @@ const QuestionDialogCmp: React.FC<QuestionDialogProps> = ({
     [handleSpace]
   );
 
-
   useEffect(() => {
     window.addEventListener("keydown", handleKeyPress);
 
@@ -98,30 +113,30 @@ const QuestionDialogCmp: React.FC<QuestionDialogProps> = ({
             <div className="text-2xl font-bold">{question?.question}</div>
             <div className="flex flex-col gap-2">
               <div
-                className={`kbd w-full text-xl ${
-                  activeIndex === 0 ? "bg-primary" : ""
-                }`}
+                className={`kbd w-full text-xl ${activeIndex === 0 ? "bg-primary" : ""
+                  }`}
+                onClick={() => handleClick(0)}
               >
                 {question?.A}
               </div>
               <div
-                className={`kbd text-xl ${
-                  activeIndex === 1 ? "bg-primary" : ""
-                }`}
+                className={`kbd text-xl ${activeIndex === 1 ? "bg-primary" : ""
+                  }`}
+                onClick={() => handleClick(1)}
               >
                 {question?.B}
               </div>
               <div
-                className={`kbd text-xl ${
-                  activeIndex === 2 ? "bg-primary" : ""
-                }`}
+                className={`kbd text-xl ${activeIndex === 2 ? "bg-primary" : ""
+                  }`}
+                onClick={() => handleClick(2)}
               >
                 {question?.C}
               </div>
               <div
-                className={`kbd text-xl ${
-                  activeIndex === 3 ? "bg-primary" : ""
-                }`}
+                className={`kbd text-xl ${activeIndex === 3 ? "bg-primary" : ""
+                  }`}
+                onClick={() => handleClick(3)}
               >
                 {question?.D}
               </div>

@@ -32,14 +32,14 @@ import {
 } from "../utils/question";
 
 const INITIAL_GAME_DEFAULTS: BaseSettings = {
-  velocityXIncrement: 1.2,
-  baseVelocityX: 2.5,
-  baseVelocityY: 1.7,
+  velocityXIncrement: 1.1,
+  baseVelocityX: -2.3,
+  baseVelocityY: 1.5,
   boardHeightDivisor: 1.7,
   maxBoardWidth: 700,
   maxLife: 2,
-  maxVelocityX: 7,
-  moveSpeed: 6,
+  maxVelocityX: 5,
+  moveSpeed: 9,
   playerHeight: 60,
   playerWidth: 10,
   player1KeyDown: "ArrowDown",
@@ -67,7 +67,7 @@ export const assignGameDefaults = (settings: BaseSettings) => {
 let animationFrame: number | null = null;
 
 // simple state management
-const GameField: React.FC<MultiplePlayerModeProps> = () => {
+const GameField: React.FC<any> = () => {
   const boardWidth = determineBoardWidth();
   const boardHeight = boardWidth / gameDefaults.boardHeightDivisor;
   const contextRef = useRef<CanvasRenderingContext2D | null>(null);
@@ -175,9 +175,9 @@ const GameField: React.FC<MultiplePlayerModeProps> = () => {
   }, [gameStared]);
 
   useEffect(() => {
-    if (life <= 0) {
-      window.location.href = `/#/enter-score`;
-    }
+    // if (life <= 0) {
+    //   window.location.href = `/#/enter-score`;
+    // }
   }, [life]);
 
   useEffect(() => {
@@ -565,6 +565,10 @@ const GameField: React.FC<MultiplePlayerModeProps> = () => {
     try {
       await initializeHubSession();
 
+      if (gameState().isHost) { // litle hacky delay to sync /TODO
+        await new Promise((resolve) => setTimeout(() => resolve(null), 500))
+      }
+
       setIsCountdownActive(false);
       resetGameState();
       startTimer();
@@ -584,7 +588,6 @@ const GameField: React.FC<MultiplePlayerModeProps> = () => {
     try {
       const sessionData = await getSessionById(gameStateId());
       const state = gameState();
-      console.log("STATE", state)
 
       if (!sessionData || !sessionData.isSessionRunning) {
         alert("Spiel wurde beendet");
@@ -603,7 +606,6 @@ const GameField: React.FC<MultiplePlayerModeProps> = () => {
       await gameHub.start();
       registerHubEvents();
       await gameHub.joinLobby(gameStateId());
-      console.log("STATE AFTRER", state)
 
       setIsHubActive(true);
     } catch (err) {

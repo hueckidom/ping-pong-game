@@ -1,20 +1,14 @@
 import buttonClickSound from "../assets/button-click-sound.mp3";
 import { HomeProps, gamepad } from "../utils/types";
-import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import backgroundMusic from "../assets/game.mp3";
-import valuehero from "../assets/valuehero.png";
-import valuehero2 from "../assets/valuehero2.png";
+import valuehero2 from "../assets/valuehero.png";
 import AudioComponent from "../components/Audio";
 import { playSound } from "../utils/board";
+import QuestionDialogCmp from "../components/QuestionDialog";
+import { getRandomQuestion } from "../utils/question";
 
-const state: any = {
-  activeIndex: 0,
-  gameMode: 0,
-};
 const Home: React.FC<HomeProps> = ({ }) => {
-  const [activeIndex, setActiveIndex] = useState(0);
-  const [gameMode, setGameMode] = useState(1);
   const navigate = useNavigate();
 
   const goToGame = async () => {
@@ -26,60 +20,6 @@ const Home: React.FC<HomeProps> = ({ }) => {
     navigate("/scores");
   };
 
-  const handlePress = () => {
-    switch (state.activeIndex) {
-      case 0:
-        goToGame();
-        break;
-      case 1:
-        goToHighscore();
-        break;
-      default:
-        break;
-    }
-  };
-
-  useEffect(() => {
-    state.activeIndex = activeIndex;
-    state.gameMode = gameMode;
-
-    localStorage.setItem("gameMode", gameMode.toString());
-  }, [activeIndex, gameMode]);
-
-  useEffect(() => {
-    const handleKeyPress = (event: KeyboardEvent) => {
-      event.preventDefault();
-      event.stopPropagation();
-
-      switch (event.key) {
-        case "ArrowUp":
-          const newIndex = state.activeIndex > 0 ? state.activeIndex - 1 : 0;
-          setActiveIndex(newIndex);
-          break;
-        case "ArrowDown":
-          const newIndexD = state.activeIndex < 1 ? state.activeIndex + 1 : 1;
-          setActiveIndex(newIndexD);
-          break;
-        case "ArrowRight":
-          const newIndexR = state.gameMode == 0 ? state.gameMode + 1 : 0;
-          setGameMode(newIndexR);
-          break;
-        case " ":
-          handlePress();
-          break;
-        default:
-          break;
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyPress);
-
-
-    return () => {
-      window.removeEventListener("keydown", handleKeyPress);
-    };
-  }, []);
-
   return (
     <>
       <div className="hero min-h-screen bg-base-200">
@@ -89,29 +29,23 @@ const Home: React.FC<HomeProps> = ({ }) => {
               <div className="fixed w-full hero-img mb-20">
                 <img
                   className="w-2/4 max-w-72 opacity-75"
-                  src={gameMode == 0 ? valuehero2 : valuehero}
+                  src={valuehero2}
                 />
               </div>
-              <h1
-                className={
-                  (gameMode == 0 ? "sweet-title-purple" : "sweet-title-mixed") +
-                  " sweet-title "
-                }
-              >
+              <h1 className={"sweet-title-mixed sweet-title"}>
                 <span data-text="#ValueHero">#ValueHero</span>
               </h1>
             </div>
 
             <div className="flex flex-col gap-4">
               <button
-                className={(activeIndex === 0 ? "active" : "") + " kave-btn"}
+                className={"kave-btn"}
                 onClick={goToGame}
               >
                 <span className="kave-line"></span>
                 SPIEL ERSTELLEN
               </button>
-              <button
-                className={(activeIndex === 1 ? "active" : "") + " kave-btn"}
+              <button className={"kave-btn"}
                 onClick={goToHighscore}
               >
                 <span className="kave-line"></span>
@@ -120,12 +54,18 @@ const Home: React.FC<HomeProps> = ({ }) => {
             </div>
           </div>
         </div>
+        {/* <QuestionDialogCmp
+          question={getRandomQuestion()}
+          isAnsweredQuestionCorrect={undefined}
+          answeredQuestion={() => { }}
+          value={"Verbundenheit"}
+        /> */}
         <AudioComponent
           onAudioEnd={() => { }}
           path={backgroundMusic}
           volume={0.005}
         />
-      </div>
+      </div >
     </>
   );
 };
