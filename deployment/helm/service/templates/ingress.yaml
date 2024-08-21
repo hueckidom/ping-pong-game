@@ -1,19 +1,19 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: client-ingress
+  name: service-ingress
   annotations:
     nginx.ingress.kubernetes.io/rewrite-target: /
 spec:
   ingressClassName: nginx
   rules:
-  - host: valuehero-pingpong.runs.onstackit.cloud
+  - host: valuehero-pingpong-api.runs.onstackit.cloud
     http:
       paths:
       - path: /
         pathType: Prefix
         backend:
           service:
-            name: ping-pong-client-service
+            name: ping-pong-service-service
             port: 
               number: 8080

@@ -34,7 +34,7 @@ spec:
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           env:
             - name: VITE_API_URL
-              value: ping-pong-service-service.default.svc.cluster.local:8080
+              value: http://valuehero-pingpong-api.runs.onstackit.cloud/
           ports:
             - name: http
               containerPort: {{ .Values.service.port }}
