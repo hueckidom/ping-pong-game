@@ -17,7 +17,7 @@ spec:
             name: ping-pong-client-service
             port: 
               number: 8080
-      - path: /swagger
+      - path: /api
         pathType: Prefix
         backend:
           service:
