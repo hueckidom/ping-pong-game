@@ -1,11 +1,5 @@
 import React, { useEffect, useState, useCallback, useRef } from "react";
 import { Question, QuestionDialogProps, gamepad } from "../utils/types";
-import {
-  addGamePadListener,
-  isDownPressed,
-  isUpPressed,
-  removeGamePadListener,
-} from "../utils/gamepad";
 import { gameDefaults } from "../views/Game";
 import correctSound from "../assets/correct.mp3";
 import wrongSound from "../assets/wrong.mp3";
@@ -82,33 +76,14 @@ const QuestionDialogCmp: React.FC<QuestionDialogProps> = ({
     [handleSpace]
   );
 
-  const gamePadhandler = useCallback(
-    (input: gamepad) => {
-      if (input.type === "button" && input.pressed) {
-        handleSpace();
-        return;
-      }
-
-      if (isDownPressed(input)) {
-        setActiveIndex((prevIndex) => (prevIndex > 0 ? prevIndex - 1 : 0));
-      }
-
-      if (isUpPressed(input)) {
-        setActiveIndex((prevIndex) => (prevIndex < 3 ? prevIndex + 1 : 3));
-      }
-    },
-    [handleSpace]
-  );
 
   useEffect(() => {
     window.addEventListener("keydown", handleKeyPress);
-    const padIndex = addGamePadListener(gamePadhandler);
 
     return () => {
       window.removeEventListener("keydown", handleKeyPress);
-      removeGamePadListener(gamePadhandler, padIndex);
     };
-  }, [handleKeyPress, gamePadhandler]);
+  }, [handleKeyPress]);
 
   return (
     <div className="hero min-h-screen bg-base-300 fixed z-20 top-0 opacity-95 backdrop-blur-md">
