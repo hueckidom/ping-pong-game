@@ -6,7 +6,6 @@ resource "stackit_ske_cluster" "ske" {
     {
       name               = var.cluster_name
       machine_type       = "c1.2"
-      os_version         = "3815.2.5"
       minimum            = "1"
       maximum            = "1"
       availability_zones = ["eu01-1"]
