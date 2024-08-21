@@ -10,7 +10,7 @@ spec:
   - host: valuehero-pingpong.runs.onstackit.cloud
     http:
       paths:
-      - path: /testpath
+      - path: /
         pathType: Prefix
         backend:
           service:
