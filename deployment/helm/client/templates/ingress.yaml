@@ -17,3 +17,10 @@ spec:
             name: ping-pong-client-service
             port: 
               number: 8080
+      - path: /swagger
+        pathType: Prefix
+        backend:
+          service:
+            name: ping-pong-service-service
+            port: 
+              number: 8080
