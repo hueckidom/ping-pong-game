@@ -8,5 +8,7 @@ namespace PingPong.Repositories.Score
 
         void AddScores(PlayerDTO newScores);
 
+        void DeleteScores();
+
     }
 }

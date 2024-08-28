@@ -80,11 +80,11 @@ namespace PingPong.Repositories.Score
         {
             using (SQLiteConnection connection = new SQLiteConnection(_sqlitePath))
             {
-                connection.Open();
-                string deleteQuery = "DELETE FROM PlayerItems";
-                using (SQLiteCommand command = new SQLiteCommand(deleteQuery, connection))
+                using (var conn = new SQLiteConnection(_sqlitePath))
                 {
-                    command.ExecuteNonQuery();
+                    conn.Open();
+                    var cmd = new SQLiteCommand("DELETE FROM PlayerItems", conn);
+                    cmd.ExecuteNonQuery();
                 }
             }
         }

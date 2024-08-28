@@ -15,7 +15,7 @@ namespace PingPong.Controllers
             _scoreService = scoreService;
         }
         
-        [HttpGet(nameof(DeleteScores))]
+        [HttpDelete(nameof(DeleteScores))]
         public IActionResult DeleteScores()
         {
             try
