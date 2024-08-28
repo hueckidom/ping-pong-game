@@ -39,7 +39,7 @@ const INITIAL_GAME_DEFAULTS: BaseSettings = {
   maxBoardWidth: 700,
   maxLife: 2,
   maxVelocityX: 5,
-  moveSpeed: 9,
+  moveSpeed: 10,
   playerHeight: 60,
   playerWidth: 10,
   player1KeyDown: "ArrowDown",

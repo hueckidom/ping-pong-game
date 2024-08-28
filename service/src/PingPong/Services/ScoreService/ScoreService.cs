@@ -21,5 +21,10 @@ namespace PingPong.Services.ScoreService
         {
             _pingPongRepository.AddScores(newScore);
         }
+
+        public void DeleteScores()
+        {
+            _pingPongRepository.DeleteScores();
+        }
     }
 }

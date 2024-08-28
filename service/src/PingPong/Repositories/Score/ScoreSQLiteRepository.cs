@@ -75,5 +75,18 @@ namespace PingPong.Repositories.Score
                 }
             }
         }
+
+        public void DeleteScores()
+        {
+            using (SQLiteConnection connection = new SQLiteConnection(_sqlitePath))
+            {
+                connection.Open();
+                string deleteQuery = "DELETE FROM PlayerItems";
+                using (SQLiteCommand command = new SQLiteCommand(deleteQuery, connection))
+                {
+                    command.ExecuteNonQuery();
+                }
+            }
+        }
     }
 }

@@ -14,6 +14,20 @@ namespace PingPong.Controllers
         {
             _scoreService = scoreService;
         }
+        
+        [HttpDelete(nameof(DeleteScores))]
+        public IActionResult DeleteScores([FromQuery] string password)
+        {
+            try
+            {
+                _scoreService.DeleteScores();
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
+            }
+        }
 
         [HttpGet(nameof(GetScores))]
         public async Task <IActionResult> GetScores()
